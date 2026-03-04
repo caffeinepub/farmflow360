@@ -1,4 +1,11 @@
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -10,9 +17,16 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { CloudRain, Droplets, Loader2, StickyNote } from "lucide-react";
-import { motion } from "motion/react";
-import { useState } from "react";
+import {
+  CloudRain,
+  Droplets,
+  Loader2,
+  Pencil,
+  StickyNote,
+  Trash2,
+} from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { RainfallLog } from "../backend.d";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
@@ -34,6 +48,23 @@ function getRainfallLevel(mm: number) {
   return { label: "Extreme", color: "text-indigo-700", bg: "bg-indigo-100" };
 }
 
+interface LocalRainfallEntry {
+  id: string;
+  date: string;
+  rainfallMM: number;
+  notes: string;
+  estateId: string;
+}
+
+interface RainfallEditForm {
+  date: string;
+  rainfallMM: string;
+  notes: string;
+  estateId: string;
+}
+
+const today = new Date().toISOString().split("T")[0];
+
 export default function RainfallScreen() {
   const { data: rainfallLogs = [], isLoading: logsLoading } =
     useUserRainfallLogs();
@@ -41,13 +72,37 @@ export default function RainfallScreen() {
   const createLog = useCreateRainfallLog();
   const { identity } = useInternetIdentity();
 
-  const today = new Date().toISOString().split("T")[0];
   const [form, setForm] = useState({
     date: today,
     rainfallMM: "",
     notes: "",
     estateId: "",
   });
+
+  const [localEntries, setLocalEntries] = useState<LocalRainfallEntry[]>([]);
+  const [editEntry, setEditEntry] = useState<LocalRainfallEntry | null>(null);
+  const [editForm, setEditForm] = useState<RainfallEditForm>({
+    date: today,
+    rainfallMM: "",
+    notes: "",
+    estateId: "",
+  });
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // Seed local entries from backend data
+  useEffect(() => {
+    if (logsLoading) return;
+    const mapped: LocalRainfallEntry[] = rainfallLogs
+      .map((log) => ({
+        id: `be-${log.id.toString()}`,
+        date: log.date,
+        rainfallMM: log.rainfallMM,
+        notes: log.notes,
+        estateId: log.estateId.toString(),
+      }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+    setLocalEntries(mapped);
+  }, [logsLoading, rainfallLogs]);
 
   const handleSubmit = async () => {
     if (!form.estateId) {
@@ -71,6 +126,18 @@ export default function RainfallScreen() {
 
       await createLog.mutateAsync(log);
       toast.success("Rainfall logged! 🌧️");
+
+      const newEntry: LocalRainfallEntry = {
+        id: `local-${Date.now()}`,
+        date: form.date,
+        rainfallMM: Number.parseFloat(form.rainfallMM) || 0,
+        notes: form.notes.trim(),
+        estateId: form.estateId,
+      };
+      setLocalEntries((prev) =>
+        [newEntry, ...prev].sort((a, b) => b.date.localeCompare(a.date)),
+      );
+
       setForm({
         date: today,
         rainfallMM: "",
@@ -82,13 +149,46 @@ export default function RainfallScreen() {
     }
   };
 
-  const totalRainfallMM = rainfallLogs.reduce(
+  const openEdit = (entry: LocalRainfallEntry) => {
+    setEditEntry(entry);
+    setEditForm({
+      date: entry.date,
+      rainfallMM: entry.rainfallMM.toString(),
+      notes: entry.notes,
+      estateId: entry.estateId,
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editEntry) return;
+    setLocalEntries((prev) =>
+      prev.map((e) =>
+        e.id === editEntry.id
+          ? {
+              ...e,
+              date: editForm.date,
+              rainfallMM: Number.parseFloat(editForm.rainfallMM) || 0,
+              notes: editForm.notes.trim(),
+              estateId: editForm.estateId,
+            }
+          : e,
+      ),
+    );
+    setEditEntry(null);
+    toast.success("Rainfall log updated");
+  };
+
+  const handleDelete = (id: string) => {
+    setLocalEntries((prev) => prev.filter((e) => e.id !== id));
+    setDeleteId(null);
+    toast.success("Rainfall log removed");
+  };
+
+  const totalRainfallMM = localEntries.reduce(
     (sum, l) => sum + l.rainfallMM,
     0,
   );
-  const recentLogs = [...rainfallLogs]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 10);
+  const recentLogs = localEntries.slice(0, 10);
 
   return (
     <div className="pb-6">
@@ -240,54 +340,228 @@ export default function RainfallScreen() {
             </div>
           ) : (
             <div className="space-y-2">
-              {recentLogs.map((log, idx) => {
-                const level = getRainfallLevel(log.rainfallMM);
-                const estateForLog = estates.find((e) => e.id === log.estateId);
-                return (
-                  <motion.div
-                    key={log.id.toString()}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.04 }}
-                    data-ocid={`rainfall.item.${idx + 1}`}
-                    className="bg-white rounded-2xl p-3.5 shadow-card border border-border flex items-center gap-3"
-                  >
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${level.bg}`}
+              <AnimatePresence initial={false}>
+                {recentLogs.map((log, idx) => {
+                  const level = getRainfallLevel(log.rainfallMM);
+                  const estateForLog = estates.find(
+                    (e) => e.id.toString() === log.estateId,
+                  );
+                  return (
+                    <motion.div
+                      key={log.id}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 8, height: 0 }}
+                      transition={{ delay: idx * 0.04 }}
+                      data-ocid={`rainfall.item.${idx + 1}`}
+                      className="bg-white rounded-2xl p-3.5 shadow-card border border-border flex items-center gap-3"
                     >
-                      <Droplets className={`w-5 h-5 ${level.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-display font-bold text-sm text-foreground">
-                        {log.date}
-                      </p>
-                      {estateForLog && (
-                        <p className="text-xs text-muted-foreground">
-                          {estateForLog.name}
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${level.bg}`}
+                      >
+                        <Droplets className={`w-5 h-5 ${level.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display font-bold text-sm text-foreground">
+                          {log.date}
                         </p>
-                      )}
-                      {log.notes && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {log.notes}
+                        {estateForLog && (
+                          <p className="text-xs text-muted-foreground">
+                            {estateForLog.name}
+                          </p>
+                        )}
+                        {log.notes && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {log.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-lg font-display font-bold text-foreground">
+                          {log.rainfallMM}
                         </p>
-                      )}
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-lg font-display font-bold text-foreground">
-                        {log.rainfallMM}
-                      </p>
-                      <p className="text-xs text-muted-foreground">mm</p>
-                      <p className={`text-xs font-medium ${level.color}`}>
-                        {level.label}
-                      </p>
-                    </div>
-                  </motion.div>
-                );
-              })}
+                        <p className="text-xs text-muted-foreground">mm</p>
+                        <p className={`text-xs font-medium ${level.color}`}>
+                          {level.label}
+                        </p>
+                      </div>
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(log)}
+                          data-ocid={`rainfall.edit_button.${idx + 1}`}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 text-blue-500 hover:bg-blue-100 transition-colors"
+                          aria-label={`Edit rainfall log for ${log.date}`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteId(log.id)}
+                          data-ocid={`rainfall.delete_button.${idx + 1}`}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                          aria-label={`Delete rainfall log for ${log.date}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </div>
           )}
         </div>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={!!editEntry}
+        onOpenChange={(open) => !open && setEditEntry(null)}
+      >
+        <DialogContent
+          className="max-w-[calc(100vw-2rem)] rounded-2xl"
+          data-ocid="rainfall.edit_dialog"
+        >
+          <DialogHeader>
+            <DialogTitle className="font-display text-lg">
+              Edit Rainfall Log
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Date</Label>
+                <Input
+                  type="date"
+                  value={editForm.date}
+                  max={today}
+                  onChange={(e) =>
+                    setEditForm((p) => ({ ...p, date: e.target.value }))
+                  }
+                  className="h-11 rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium flex items-center gap-1">
+                  <Droplets className="w-3.5 h-3.5 text-blue-400" />
+                  Rainfall (mm)
+                </Label>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={editForm.rainfallMM}
+                  onChange={(e) =>
+                    setEditForm((p) => ({ ...p, rainfallMM: e.target.value }))
+                  }
+                  className="h-11 rounded-xl"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+            </div>
+
+            {estates.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Estate</Label>
+                <Select
+                  value={editForm.estateId}
+                  onValueChange={(v) =>
+                    setEditForm((p) => ({ ...p, estateId: v }))
+                  }
+                >
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <SelectValue placeholder="Select estate" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {estates.map((e) => (
+                      <SelectItem key={e.id.toString()} value={e.id.toString()}>
+                        {e.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1">
+                <StickyNote className="w-3.5 h-3.5 text-muted-foreground" />
+                Notes (optional)
+              </Label>
+              <Textarea
+                placeholder="e.g. Heavy rain in the morning..."
+                value={editForm.notes}
+                onChange={(e) =>
+                  setEditForm((p) => ({ ...p, notes: e.target.value }))
+                }
+                className="rounded-xl resize-none"
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setEditEntry(null)}
+              className="flex-1 rounded-xl"
+              data-ocid="rainfall.cancel_button"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              className="flex-1 rounded-xl text-white"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.5 0.14 240) 0%, oklch(0.42 0.12 248) 100%)",
+              }}
+              data-ocid="rainfall.save_button"
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+      >
+        <DialogContent className="max-w-[calc(100vw-2rem)] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-lg">
+              Delete Rainfall Log?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This action cannot be undone. The entry will be removed from your
+            local records.
+          </p>
+          <DialogFooter className="gap-2 flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteId(null)}
+              className="flex-1 rounded-xl"
+              data-ocid="rainfall.cancel_delete_button"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteId && handleDelete(deleteId)}
+              className="flex-1 rounded-xl"
+              data-ocid="rainfall.confirm_delete_button"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
