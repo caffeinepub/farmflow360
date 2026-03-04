@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Cabinet Grotesk";
+  src: url("/assets/fonts/CabinetGrotesk-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Figtree";
+  src: url("/assets/fonts/Figtree-Variable.woff2") format("woff2");
+  font-weight: 300 900;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 1rem;
+
+    /* FarmFlow360 Green Theme */
+    --background: 0.97 0.01 140;
+    --foreground: 0.15 0.04 160;
+    --card: 1 0 0;
+    --card-foreground: 0.18 0.045 155;
+    --popover: 1 0 0;
+    --popover-foreground: 0.18 0.045 155;
+
+    /* Primary: rich forest green */
+    --primary: 0.52 0.17 145;
+    --primary-foreground: 0.98 0.01 140;
+
+    /* Secondary: light sage green */
+    --secondary: 0.92 0.05 140;
+    --secondary-foreground: 0.3 0.1 145;
+
+    --muted: 0.93 0.03 135;
+    --muted-foreground: 0.5 0.06 145;
+
+    --accent: 0.88 0.08 145;
+    --accent-foreground: 0.25 0.1 150;
+
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    --border: 0.88 0.04 140;
+    --input: 0.9 0.03 140;
+    --ring: 0.52 0.17 145;
+
+    /* Chart colors */
+    --chart-1: 0.52 0.17 145;
+    --chart-2: 0.65 0.14 145;
+    --chart-3: 0.75 0.1 145;
+    --chart-4: 0.42 0.18 150;
+    --chart-5: 0.646 0.222 41.116;
+
+    /* Sidebar */
+    --sidebar: 0.18 0.07 155;
+    --sidebar-foreground: 0.92 0.04 140;
+    --sidebar-primary: 0.65 0.16 145;
+    --sidebar-primary-foreground: 0.98 0.01 140;
+    --sidebar-accent: 0.25 0.08 155;
+    --sidebar-accent-foreground: 0.92 0.04 140;
+    --sidebar-border: 0.28 0.07 155;
+    --sidebar-ring: 0.52 0.17 145;
+
+    /* FarmFlow custom tokens */
+    --farm-green-deep: 0.32 0.12 148;
+    --farm-green-mid: 0.52 0.17 145;
+    --farm-green-bright: 0.72 0.16 143;
+    --farm-green-light: 0.88 0.08 145;
+    --farm-green-pale: 0.95 0.04 140;
+    --farm-gold: 0.78 0.16 85;
+    --farm-silver: 0.72 0.02 240;
+    --farm-bronze: 0.62 0.12 55;
+    --farm-blue: 0.6 0.14 240;
+    --farm-rain: 0.62 0.1 240;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Figtree", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Cabinet Grotesk", sans-serif;
+    font-weight: 700;
+  }
+}
+
+@layer utilities {
+  .farm-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.42 0.17 148) 0%,
+      oklch(0.32 0.12 152) 100%
+    );
+  }
+
+  .farm-gradient-light {
+    background: linear-gradient(
+      135deg,
+      oklch(0.52 0.17 145) 0%,
+      oklch(0.42 0.17 148) 100%
+    );
+  }
+
+  .farm-gradient-card {
+    background: linear-gradient(
+      140deg,
+      oklch(0.42 0.18 145) 0%,
+      oklch(0.3 0.13 152) 60%,
+      oklch(0.25 0.1 158) 100%
+    );
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .stat-card {
+    @apply rounded-2xl p-4 shadow-sm;
+    background: white;
+    border: 1px solid oklch(0.9 0.04 140);
+  }
+
+  .bottom-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
