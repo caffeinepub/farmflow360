@@ -32,6 +32,7 @@ import type { RainfallLog } from "../backend.d";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useCreateRainfallLog,
+  useDeleteRainfallLog,
   useUserEstates,
   useUserRainfallLogs,
 } from "../hooks/useQueries";
@@ -54,6 +55,7 @@ interface LocalRainfallEntry {
   rainfallMM: number;
   notes: string;
   estateId: string;
+  backendId?: bigint;
 }
 
 interface RainfallEditForm {
@@ -70,6 +72,7 @@ export default function RainfallScreen() {
     useUserRainfallLogs();
   const { data: estates = [] } = useUserEstates();
   const createLog = useCreateRainfallLog();
+  const deleteLog = useDeleteRainfallLog();
   const { identity } = useInternetIdentity();
 
   const [form, setForm] = useState({
@@ -88,6 +91,7 @@ export default function RainfallScreen() {
     estateId: "",
   });
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Seed local entries from backend data
   useEffect(() => {
@@ -99,6 +103,7 @@ export default function RainfallScreen() {
         rainfallMM: log.rainfallMM,
         notes: log.notes,
         estateId: log.estateId.toString(),
+        backendId: log.id,
       }))
       .sort((a, b) => b.date.localeCompare(a.date));
     setLocalEntries(mapped);
@@ -124,7 +129,7 @@ export default function RainfallScreen() {
         estateId: BigInt(form.estateId),
       };
 
-      await createLog.mutateAsync(log);
+      const newLogId = await createLog.mutateAsync(log);
       toast.success("Rainfall logged! 🌧️");
 
       const newEntry: LocalRainfallEntry = {
@@ -133,6 +138,7 @@ export default function RainfallScreen() {
         rainfallMM: Number.parseFloat(form.rainfallMM) || 0,
         notes: form.notes.trim(),
         estateId: form.estateId,
+        backendId: newLogId,
       };
       setLocalEntries((prev) =>
         [newEntry, ...prev].sort((a, b) => b.date.localeCompare(a.date)),
@@ -178,10 +184,23 @@ export default function RainfallScreen() {
     toast.success("Rainfall log updated");
   };
 
-  const handleDelete = (id: string) => {
-    setLocalEntries((prev) => prev.filter((e) => e.id !== id));
-    setDeleteId(null);
-    toast.success("Rainfall log removed");
+  const handleDelete = async (id: string) => {
+    const entry = localEntries.find((e) => e.id === id);
+    if (!entry) return;
+
+    setIsDeleting(true);
+    try {
+      if (entry.backendId !== undefined && entry.backendId > BigInt(0)) {
+        await deleteLog.mutateAsync(entry.backendId);
+      }
+      setLocalEntries((prev) => prev.filter((e) => e.id !== id));
+      setDeleteId(null);
+      toast.success("Rainfall log deleted");
+    } catch {
+      toast.error("Failed to delete rainfall log.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const totalRainfallMM = localEntries.reduce(
@@ -530,7 +549,7 @@ export default function RainfallScreen() {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
+        onOpenChange={(open) => !open && !isDeleting && setDeleteId(null)}
       >
         <DialogContent className="max-w-[calc(100vw-2rem)] rounded-2xl">
           <DialogHeader>
@@ -539,13 +558,13 @@ export default function RainfallScreen() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This action cannot be undone. The entry will be removed from your
-            local records.
+            This action cannot be undone.
           </p>
           <DialogFooter className="gap-2 flex-row">
             <Button
               variant="outline"
               onClick={() => setDeleteId(null)}
+              disabled={isDeleting}
               className="flex-1 rounded-xl"
               data-ocid="rainfall.cancel_delete_button"
             >
@@ -554,10 +573,18 @@ export default function RainfallScreen() {
             <Button
               variant="destructive"
               onClick={() => deleteId && handleDelete(deleteId)}
+              disabled={isDeleting}
               className="flex-1 rounded-xl"
               data-ocid="rainfall.confirm_delete_button"
             >
-              Delete
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

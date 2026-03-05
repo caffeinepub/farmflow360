@@ -1,3 +1,13 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,15 +19,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Leaf, Loader2, MapPin, Plus, Sprout, X } from "lucide-react";
+import { Leaf, Loader2, MapPin, Plus, Sprout, Trash2, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Estate } from "../backend.d";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
-import { useCreateEstate, useUserEstates } from "../hooks/useQueries";
+import {
+  useCreateEstate,
+  useDeleteEstate,
+  useUserEstates,
+} from "../hooks/useQueries";
 
-function EstateCard({ estate, index }: { estate: Estate; index: number }) {
+function EstateCard({
+  estate,
+  index,
+  onDelete,
+}: {
+  estate: Estate;
+  index: number;
+  onDelete: (estate: Estate) => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -46,11 +68,22 @@ function EstateCard({ estate, index }: { estate: Estate; index: number }) {
             </p>
           )}
         </div>
-        <div className="text-right flex-shrink-0">
-          <p className="text-xl font-display font-bold text-farm-mid">
-            {estate.areaAcres}
-          </p>
-          <p className="text-xs text-muted-foreground">acres</p>
+        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+          <div className="text-right">
+            <p className="text-xl font-display font-bold text-farm-mid">
+              {estate.areaAcres}
+            </p>
+            <p className="text-xs text-muted-foreground">acres</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onDelete(estate)}
+            className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100 hover:text-red-600 transition-colors"
+            data-ocid={`estates.delete_button.${index + 1}`}
+            aria-label={`Delete ${estate.name}`}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </motion.div>
@@ -60,6 +93,7 @@ function EstateCard({ estate, index }: { estate: Estate; index: number }) {
 export default function EstatesScreen() {
   const { data: estates = [], isLoading } = useUserEstates();
   const createEstate = useCreateEstate();
+  const deleteEstate = useDeleteEstate();
   const { identity } = useInternetIdentity();
 
   const [open, setOpen] = useState(false);
@@ -69,6 +103,8 @@ export default function EstatesScreen() {
     areaAcres: "",
     estateCare: "",
   });
+
+  const [deleteTarget, setDeleteTarget] = useState<Estate | null>(null);
 
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.location.trim()) {
@@ -96,6 +132,18 @@ export default function EstatesScreen() {
       setForm({ name: "", location: "", areaAcres: "", estateCare: "" });
     } catch {
       toast.error("Failed to add estate. Please try again.");
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteEstate.mutateAsync(deleteTarget.id);
+      toast.success(`"${deleteTarget.name}" deleted`);
+    } catch {
+      toast.error("Failed to delete estate. Please try again.");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -157,13 +205,16 @@ export default function EstatesScreen() {
             </Button>
           </motion.div>
         ) : (
-          estates.map((estate, idx) => (
-            <EstateCard
-              key={estate.id.toString()}
-              estate={estate}
-              index={idx}
-            />
-          ))
+          <AnimatePresence>
+            {estates.map((estate, idx) => (
+              <EstateCard
+                key={estate.id.toString()}
+                estate={estate}
+                index={idx}
+                onDelete={setDeleteTarget}
+              />
+            ))}
+          </AnimatePresence>
         )}
       </div>
 
@@ -262,6 +313,48 @@ export default function EstatesScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent data-ocid="estates.delete_dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Estate?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">{deleteTarget?.name}</span>? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              data-ocid="estates.delete_dialog.cancel_button"
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-ocid="estates.delete_dialog.confirm_button"
+              onClick={handleConfirmDelete}
+              disabled={deleteEstate.isPending}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {deleteEstate.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

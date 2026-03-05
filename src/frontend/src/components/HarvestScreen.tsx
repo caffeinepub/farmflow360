@@ -31,6 +31,8 @@ import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useCreateCropYield,
   useCreateRevenueEntry,
+  useDeleteCropYield,
+  useDeleteRevenueEntry,
   useUserCropYields,
   useUserEstates,
   useUserRevenueEntries,
@@ -44,6 +46,8 @@ interface HarvestEntry {
   salePricePerUnit: number;
   totalValue: number;
   estateId: string;
+  cropYieldId?: bigint;
+  revenueEntryId?: bigint;
 }
 
 interface HarvestForm {
@@ -81,6 +85,8 @@ export default function HarvestScreen() {
   const { data: estates = [] } = useUserEstates();
   const createCropYield = useCreateCropYield();
   const createRevenueEntry = useCreateRevenueEntry();
+  const deleteCropYield = useDeleteCropYield();
+  const deleteRevenueEntry = useDeleteRevenueEntry();
   const { identity } = useInternetIdentity();
 
   const [localEntries, setLocalEntries] = useState<HarvestEntry[]>([]);
@@ -89,6 +95,7 @@ export default function HarvestScreen() {
   const [editForm, setEditForm] = useState<HarvestForm>(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Merge backend data into local entries on first load
   useEffect(() => {
@@ -110,6 +117,8 @@ export default function HarvestScreen() {
           salePricePerUnit,
           totalValue,
           estateId: cy.estateId.toString(),
+          cropYieldId: cy.id,
+          revenueEntryId: matchingRevenue?.id ?? BigInt(0),
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -149,7 +158,7 @@ export default function HarvestScreen() {
       const principal = identity.getPrincipal();
       const estateIdBig = BigInt(form.estateId || "0");
 
-      await Promise.all([
+      const [newCropYieldId, newRevenueEntryId] = await Promise.all([
         createCropYield.mutateAsync({
           id: BigInt(0),
           userId: principal,
@@ -176,6 +185,8 @@ export default function HarvestScreen() {
         salePricePerUnit: price,
         totalValue: calculatedTotal,
         estateId: form.estateId,
+        cropYieldId: newCropYieldId,
+        revenueEntryId: newRevenueEntryId,
       };
 
       setLocalEntries((prev) => [newEntry, ...prev]);
@@ -224,10 +235,38 @@ export default function HarvestScreen() {
     toast.success("Harvest entry updated");
   };
 
-  const handleDelete = (id: string) => {
-    setLocalEntries((prev) => prev.filter((e) => e.id !== id));
-    setDeleteId(null);
-    toast.success("Harvest entry removed");
+  const handleDelete = async (id: string) => {
+    const entry = localEntries.find((e) => e.id === id);
+    if (!entry) return;
+
+    setIsDeleting(true);
+    try {
+      // Only call backend delete if we have valid backend IDs
+      const hasCropYieldId =
+        entry.cropYieldId !== undefined && entry.cropYieldId > BigInt(0);
+      const hasRevenueEntryId =
+        entry.revenueEntryId !== undefined && entry.revenueEntryId > BigInt(0);
+
+      const deleteOps: Promise<void>[] = [];
+      if (hasCropYieldId) {
+        deleteOps.push(deleteCropYield.mutateAsync(entry.cropYieldId!));
+      }
+      if (hasRevenueEntryId) {
+        deleteOps.push(deleteRevenueEntry.mutateAsync(entry.revenueEntryId!));
+      }
+
+      if (deleteOps.length > 0) {
+        await Promise.all(deleteOps);
+      }
+
+      setLocalEntries((prev) => prev.filter((e) => e.id !== id));
+      setDeleteId(null);
+      toast.success("Harvest entry deleted");
+    } catch {
+      toast.error("Failed to delete harvest entry.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const isLoading = yieldsLoading || revenueLoading;
@@ -659,7 +698,7 @@ export default function HarvestScreen() {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
+        onOpenChange={(open) => !open && !isDeleting && setDeleteId(null)}
       >
         <DialogContent className="max-w-[calc(100vw-2rem)] rounded-2xl">
           <DialogHeader>
@@ -668,13 +707,13 @@ export default function HarvestScreen() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This action cannot be undone. The entry will be removed from your
-            local records.
+            This action cannot be undone.
           </p>
           <DialogFooter className="gap-2 flex-row">
             <Button
               variant="outline"
               onClick={() => setDeleteId(null)}
+              disabled={isDeleting}
               className="flex-1 rounded-xl"
               data-ocid="harvest.cancel_delete_button"
             >
@@ -683,10 +722,18 @@ export default function HarvestScreen() {
             <Button
               variant="destructive"
               onClick={() => deleteId && handleDelete(deleteId)}
+              disabled={isDeleting}
               className="flex-1 rounded-xl"
               data-ocid="harvest.confirm_delete_button"
             >
-              Delete
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

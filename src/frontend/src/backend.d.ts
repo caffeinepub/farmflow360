@@ -86,6 +86,12 @@ export interface backendInterface {
     createLabourEntry(entry: LabourEntry): Promise<bigint>;
     createRainfallLog(log: RainfallLog): Promise<bigint>;
     createRevenueEntry(entry: RevenueEntry): Promise<bigint>;
+    deleteCropYield(yieldId: bigint): Promise<void>;
+    deleteDailyLog(logId: bigint): Promise<void>;
+    deleteEstate(estateId: bigint): Promise<void>;
+    deleteLabourEntry(entryId: bigint): Promise<void>;
+    deleteRainfallLog(logId: bigint): Promise<void>;
+    deleteRevenueEntry(entryId: bigint): Promise<void>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCropYield(yieldId: bigint): Promise<CropYield>;

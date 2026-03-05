@@ -1,37 +1,34 @@
 # FarmFlow360
 
 ## Current State
-FarmFlow360 is a full-stack farm management mobile app with:
-- Dashboard with streak, rainfall, expenses, revenue stats
-- Daily Logs, Rainfall, Labour, Estates, Analytics screens
-- Bottom nav with 5 tabs: Home, Logs, Rain, Labour, Analytics
-- Backend has: CropYield, RevenueEntry, LabourEntry, RainfallLog, DailyLog, Estate types
-- No harvest log / crop yield sales tracking UI exists yet
+- Full-stack farm management app with Dashboard, DailyLogs, Rainfall, Labour, Harvest, Estates, Analytics, Weather screens.
+- Bottom nav with 7 tabs (Home, Logs, Rain, Labour, Analytics, Harvest, Weather).
+- `ProfileSetup` modal appears once on first login to let users enter their name.
+- `useUserProfile` / `useSaveUserProfile` hooks exist and call `getCallerUserProfile` / `saveCallerUserProfile` backend APIs.
+- No way to update name after initial setup.
 
 ## Requested Changes (Diff)
 
 ### Add
-- **HarvestScreen** (`src/frontend/src/components/HarvestScreen.tsx`): New screen for logging crop harvests and sales
-  - Header: "Harvest Log 🌾" with total harvest value summary
-  - Log Harvest form: Harvest Date, Crop Type (text input), Quantity (kg), Sale Price per Unit, auto-calculated Total Value
-  - Records table/list showing: Harvest Date, Crop Type, Quantity, Sale Price/Unit, Total Value, Actions (Edit / Delete)
-  - Edit inline or via dialog; Delete with confirmation
-  - Uses backend `createCropYield` to store yield quantity and `createRevenueEntry` to store sale revenue
-  - Harvest entries stored locally (combine CropYield + user-entered sale price in React state for the session; persisted via backend calls)
-  - Since backend has no delete/update, implement edit/delete as local-only state management (entries managed in React state after initial fetch)
+- New `ProfileScreen` component: a dedicated settings/profile page accessible from the app.
+- A "Profile" tab in the bottom navigation bar (User/person icon).
+- Profile screen shows: current name (editable), save button, and a sign-out option.
 
 ### Modify
-- **App.tsx**: Add `harvest` tab to Tab type, NAV_ITEMS (icon: Wheat from lucide), renderTab switch case, import HarvestScreen
-- **useQueries.ts**: Export `useCreateCropYield` and `useCreateRevenueEntry` mutations (already have query hooks, just need mutations)
+- `App.tsx`: Add "profile" to the `Tab` union type, add profile tab to `NAV_ITEMS`, import and render `ProfileScreen` in the tab switcher.
 
 ### Remove
-- Nothing removed
+- Nothing removed.
 
 ## Implementation Plan
-1. Add `useCreateCropYield` and `useCreateRevenueEntry` mutations to `useQueries.ts`
-2. Create `HarvestScreen.tsx` with:
-   - Log Harvest form (date, crop type, quantity, sale price/unit, auto-calculated total)
-   - Harvest records list with edit/delete actions
-   - Edit dialog for modifying local entries
-   - Delete confirmation per row
-3. Update `App.tsx` to add Harvest tab with Wheat icon in bottom nav
+1. Create `src/frontend/src/components/ProfileScreen.tsx`:
+   - Fetch current profile with `useUserProfile`.
+   - Pre-fill name input with `profile?.name`.
+   - On save, call `useSaveUserProfile` mutation with the updated name.
+   - Show success/error toast.
+   - Show a sign-out / logout button using `useInternetIdentity`.
+   - Match the existing Gen Z farm aesthetic (farm-gradient, rounded-xl cards, etc.).
+2. Update `App.tsx`:
+   - Add `"profile"` to the `Tab` union.
+   - Add `{ id: "profile", label: "Profile", icon: UserCircle }` to `NAV_ITEMS`.
+   - Add `case "profile": return <ProfileScreen />;` to the tab switcher.

@@ -3,8 +3,10 @@ import { Toaster } from "@/components/ui/sonner";
 import {
   BarChart3,
   ClipboardList,
+  Cloud,
   CloudRain,
   Home,
+  UserCircle,
   Users,
   Wheat,
 } from "lucide-react";
@@ -17,8 +19,10 @@ import Dashboard from "./components/Dashboard";
 import EstatesScreen from "./components/EstatesScreen";
 import HarvestScreen from "./components/HarvestScreen";
 import LabourScreen from "./components/LabourScreen";
+import ProfileScreen from "./components/ProfileScreen";
 import ProfileSetup from "./components/ProfileSetup";
 import RainfallScreen from "./components/RainfallScreen";
+import WeatherScreen from "./components/WeatherScreen";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 
 type Tab =
@@ -28,7 +32,9 @@ type Tab =
   | "rainfall"
   | "labour"
   | "analytics"
-  | "harvest";
+  | "harvest"
+  | "weather"
+  | "profile";
 
 const NAV_ITEMS: {
   id: Tab;
@@ -41,6 +47,8 @@ const NAV_ITEMS: {
   { id: "labour", label: "Labour", icon: Users },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "harvest", label: "Harvest", icon: Wheat },
+  { id: "weather", label: "Weather", icon: Cloud },
+  { id: "profile", label: "Profile", icon: UserCircle },
 ];
 
 export default function App() {
@@ -90,6 +98,10 @@ export default function App() {
         return <AnalyticsScreen />;
       case "harvest":
         return <HarvestScreen />;
+      case "weather":
+        return <WeatherScreen />;
+      case "profile":
+        return <ProfileScreen />;
       default:
         return <Dashboard onNavigate={(tab) => setActiveTab(tab as Tab)} />;
     }

@@ -33,6 +33,7 @@ import type { LabourEntry } from "../backend.d";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useCreateLabourEntry,
+  useDeleteLabourEntry,
   useUserEstates,
   useUserLabourEntries,
 } from "../hooks/useQueries";
@@ -59,6 +60,7 @@ interface LocalLabourEntry {
   totalAmount: number;
   date: string;
   estateId: string;
+  backendId?: bigint;
 }
 
 interface LabourEditForm {
@@ -77,6 +79,7 @@ export default function LabourScreen() {
     useUserLabourEntries();
   const { data: estates = [] } = useUserEstates();
   const createEntry = useCreateLabourEntry();
+  const deleteEntry = useDeleteLabourEntry();
   const { identity } = useInternetIdentity();
 
   const [form, setForm] = useState({
@@ -99,6 +102,7 @@ export default function LabourScreen() {
     estateId: "",
   });
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Seed local entries from backend data
   useEffect(() => {
@@ -113,6 +117,7 @@ export default function LabourScreen() {
         totalAmount: e.totalAmount,
         date: e.date,
         estateId: e.estateId.toString(),
+        backendId: e.id,
       }))
       .sort((a, b) => b.date.localeCompare(a.date));
     setLocalEntries(mapped);
@@ -157,7 +162,7 @@ export default function LabourScreen() {
         estateId: BigInt(form.estateId),
       };
 
-      await createEntry.mutateAsync(entry);
+      const newEntryId = await createEntry.mutateAsync(entry);
       toast.success("Labour entry saved! 👷");
 
       const newEntry: LocalLabourEntry = {
@@ -169,6 +174,7 @@ export default function LabourScreen() {
         totalAmount,
         date: form.date,
         estateId: form.estateId,
+        backendId: newEntryId,
       };
       setLocalEntries((prev) =>
         [newEntry, ...prev].sort((a, b) => b.date.localeCompare(a.date)),
@@ -225,10 +231,23 @@ export default function LabourScreen() {
     toast.success("Labour entry updated");
   };
 
-  const handleDelete = (id: string) => {
-    setLocalEntries((prev) => prev.filter((e) => e.id !== id));
-    setDeleteId(null);
-    toast.success("Labour entry removed");
+  const handleDelete = async (id: string) => {
+    const entry = localEntries.find((e) => e.id === id);
+    if (!entry) return;
+
+    setIsDeleting(true);
+    try {
+      if (entry.backendId !== undefined && entry.backendId > BigInt(0)) {
+        await deleteEntry.mutateAsync(entry.backendId);
+      }
+      setLocalEntries((prev) => prev.filter((e) => e.id !== id));
+      setDeleteId(null);
+      toast.success("Labour entry deleted");
+    } catch {
+      toast.error("Failed to delete labour entry.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const totalWages = localEntries.reduce((sum, e) => sum + e.totalAmount, 0);
@@ -687,7 +706,7 @@ export default function LabourScreen() {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
+        onOpenChange={(open) => !open && !isDeleting && setDeleteId(null)}
       >
         <DialogContent className="max-w-[calc(100vw-2rem)] rounded-2xl">
           <DialogHeader>
@@ -696,13 +715,13 @@ export default function LabourScreen() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This action cannot be undone. The entry will be removed from your
-            local records.
+            This action cannot be undone.
           </p>
           <DialogFooter className="gap-2 flex-row">
             <Button
               variant="outline"
               onClick={() => setDeleteId(null)}
+              disabled={isDeleting}
               className="flex-1 rounded-xl"
               data-ocid="labour.cancel_delete_button"
             >
@@ -711,10 +730,18 @@ export default function LabourScreen() {
             <Button
               variant="destructive"
               onClick={() => deleteId && handleDelete(deleteId)}
+              disabled={isDeleting}
               className="flex-1 rounded-xl"
               data-ocid="labour.confirm_delete_button"
             >
-              Delete
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

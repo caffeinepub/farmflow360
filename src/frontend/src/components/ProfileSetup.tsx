@@ -14,7 +14,8 @@ export default function ProfileSetup() {
   const [name, setName] = useState("");
 
   useEffect(() => {
-    if (!isLoading && !profile?.name) {
+    // Only show if the profile has never been saved (null means no record in backend)
+    if (!isLoading && profile === null) {
       // Small delay to avoid flash on first load
       const timer = setTimeout(() => setShowSetup(true), 800);
       return () => clearTimeout(timer);
@@ -96,7 +97,15 @@ export default function ProfileSetup() {
 
               <button
                 type="button"
-                onClick={() => setShowSetup(false)}
+                onClick={async () => {
+                  // Save an empty profile so the popup never shows again after skip
+                  try {
+                    await saveProfile.mutateAsync({ name: "" });
+                  } catch {
+                    // Ignore errors on skip — just close the modal
+                  }
+                  setShowSetup(false);
+                }}
                 className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
               >
                 Skip for now

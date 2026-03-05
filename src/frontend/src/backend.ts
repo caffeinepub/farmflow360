@@ -169,6 +169,12 @@ export interface backendInterface {
     createLabourEntry(entry: LabourEntry): Promise<bigint>;
     createRainfallLog(log: RainfallLog): Promise<bigint>;
     createRevenueEntry(entry: RevenueEntry): Promise<bigint>;
+    deleteCropYield(yieldId: bigint): Promise<void>;
+    deleteDailyLog(logId: bigint): Promise<void>;
+    deleteEstate(estateId: bigint): Promise<void>;
+    deleteLabourEntry(entryId: bigint): Promise<void>;
+    deleteRainfallLog(logId: bigint): Promise<void>;
+    deleteRevenueEntry(entryId: bigint): Promise<void>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCropYield(yieldId: bigint): Promise<CropYield>;
@@ -318,6 +324,90 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.createRevenueEntry(arg0);
+            return result;
+        }
+    }
+    async deleteCropYield(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteCropYield(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteCropYield(arg0);
+            return result;
+        }
+    }
+    async deleteDailyLog(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteDailyLog(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteDailyLog(arg0);
+            return result;
+        }
+    }
+    async deleteEstate(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteEstate(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteEstate(arg0);
+            return result;
+        }
+    }
+    async deleteLabourEntry(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteLabourEntry(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteLabourEntry(arg0);
+            return result;
+        }
+    }
+    async deleteRainfallLog(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteRainfallLog(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteRainfallLog(arg0);
+            return result;
+        }
+    }
+    async deleteRevenueEntry(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteRevenueEntry(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteRevenueEntry(arg0);
             return result;
         }
     }

@@ -249,6 +249,94 @@ export function useCreateRevenueEntry() {
   });
 }
 
+export function useDeleteCropYield() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (yieldId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteCropYield(yieldId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["cropYields"] });
+    },
+  });
+}
+
+export function useDeleteRevenueEntry() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (entryId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteRevenueEntry(entryId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["revenueEntries"] });
+      void queryClient.invalidateQueries({ queryKey: ["totalRevenue"] });
+    },
+  });
+}
+
+export function useDeleteLabourEntry() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (entryId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteLabourEntry(entryId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["labourEntries"] });
+      void queryClient.invalidateQueries({ queryKey: ["totalExpenses"] });
+    },
+  });
+}
+
+export function useDeleteRainfallLog() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (logId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteRainfallLog(logId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["rainfallLogs"] });
+      void queryClient.invalidateQueries({ queryKey: ["totalRainfall"] });
+    },
+  });
+}
+
+export function useDeleteDailyLog() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (logId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteDailyLog(logId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["dailyLogs"] });
+      void queryClient.invalidateQueries({ queryKey: ["totalRainfall"] });
+    },
+  });
+}
+
+export function useDeleteEstate() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (estateId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.deleteEstate(estateId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["estates"] });
+    },
+  });
+}
+
 // ─── Streak Calculation ───────────────────────────────────────────────────────
 
 export function calculateStreak(dailyLogs: DailyLog[]): number {

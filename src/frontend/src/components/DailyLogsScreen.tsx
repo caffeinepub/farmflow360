@@ -34,6 +34,7 @@ import type { DailyLog } from "../backend.d";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useCreateDailyLog,
+  useDeleteDailyLog,
   useUserDailyLogs,
   useUserEstates,
 } from "../hooks/useQueries";
@@ -46,6 +47,7 @@ interface LocalDailyLog {
   laborHours: number;
   pesticideMl: number;
   estateId: string;
+  backendId?: bigint;
 }
 
 interface DailyLogEditForm {
@@ -63,6 +65,7 @@ export default function DailyLogsScreen() {
   const { data: logs = [], isLoading: logsLoading } = useUserDailyLogs();
   const { data: estates = [] } = useUserEstates();
   const createLog = useCreateDailyLog();
+  const deleteLog = useDeleteDailyLog();
   const { identity } = useInternetIdentity();
 
   const [form, setForm] = useState({
@@ -85,6 +88,7 @@ export default function DailyLogsScreen() {
     estateId: "",
   });
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Seed local entries from backend data
   useEffect(() => {
@@ -98,6 +102,7 @@ export default function DailyLogsScreen() {
         laborHours: log.laborHours,
         pesticideMl: log.pesticideMl,
         estateId: log.estateId.toString(),
+        backendId: log.id,
       }))
       .sort((a, b) => b.date.localeCompare(a.date));
     setLocalEntries(mapped);
@@ -125,7 +130,7 @@ export default function DailyLogsScreen() {
         estateId: BigInt(form.estateId),
       };
 
-      await createLog.mutateAsync(log);
+      const newLogId = await createLog.mutateAsync(log);
       toast.success("Daily log saved! 📋");
 
       const newEntry: LocalDailyLog = {
@@ -136,6 +141,7 @@ export default function DailyLogsScreen() {
         laborHours: Number.parseFloat(form.laborHours) || 0,
         pesticideMl: Number.parseFloat(form.pesticideMl) || 0,
         estateId: form.estateId,
+        backendId: newLogId,
       };
       setLocalEntries((prev) =>
         [newEntry, ...prev].sort((a, b) => b.date.localeCompare(a.date)),
@@ -187,10 +193,23 @@ export default function DailyLogsScreen() {
     toast.success("Daily log updated");
   };
 
-  const handleDelete = (id: string) => {
-    setLocalEntries((prev) => prev.filter((e) => e.id !== id));
-    setDeleteId(null);
-    toast.success("Daily log removed");
+  const handleDelete = async (id: string) => {
+    const entry = localEntries.find((e) => e.id === id);
+    if (!entry) return;
+
+    setIsDeleting(true);
+    try {
+      if (entry.backendId !== undefined && entry.backendId > BigInt(0)) {
+        await deleteLog.mutateAsync(entry.backendId);
+      }
+      setLocalEntries((prev) => prev.filter((e) => e.id !== id));
+      setDeleteId(null);
+      toast.success("Daily log deleted");
+    } catch {
+      toast.error("Failed to delete daily log.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const recentLogs = localEntries.slice(0, 10);
@@ -628,7 +647,7 @@ export default function DailyLogsScreen() {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
+        onOpenChange={(open) => !open && !isDeleting && setDeleteId(null)}
       >
         <DialogContent className="max-w-[calc(100vw-2rem)] rounded-2xl">
           <DialogHeader>
@@ -637,13 +656,13 @@ export default function DailyLogsScreen() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This action cannot be undone. The entry will be removed from your
-            local records.
+            This action cannot be undone.
           </p>
           <DialogFooter className="gap-2 flex-row">
             <Button
               variant="outline"
               onClick={() => setDeleteId(null)}
+              disabled={isDeleting}
               className="flex-1 rounded-xl"
               data-ocid="logs.cancel_delete_button"
             >
@@ -652,10 +671,18 @@ export default function DailyLogsScreen() {
             <Button
               variant="destructive"
               onClick={() => deleteId && handleDelete(deleteId)}
+              disabled={isDeleting}
               className="flex-1 rounded-xl"
               data-ocid="logs.confirm_delete_button"
             >
-              Delete
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

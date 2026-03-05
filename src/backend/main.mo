@@ -7,8 +7,12 @@ import Float "mo:core/Float";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
+
+
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+
+// Use migration pattern for future compatibility.
 
 actor {
   // Authorization system state
@@ -180,6 +184,20 @@ actor {
     filteredEstates.toArray();
   };
 
+  public shared ({ caller }) func deleteEstate(estateId : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete estates");
+    };
+    let estate = switch (estates.get(estateId)) {
+      case (null) { Runtime.trap("Estate not found") };
+      case (?estate) { estate };
+    };
+    if (estate.userId != caller) {
+      Runtime.trap("Unauthorized: You do not own this estate");
+    };
+    estates.remove(estateId);
+  };
+
   // Labour Entries CRUD
   public shared ({ caller }) func createLabourEntry(entry : LabourEntry) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -226,6 +244,20 @@ actor {
     filteredEntries.toArray();
   };
 
+  public shared ({ caller }) func deleteLabourEntry(entryId : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete labour entries");
+    };
+    let entry = switch (labourEntries.get(entryId)) {
+      case (null) { Runtime.trap("Labour entry not found") };
+      case (?entry) { entry };
+    };
+    if (entry.userId != caller) {
+      Runtime.trap("Unauthorized: You do not own this entry");
+    };
+    labourEntries.remove(entryId);
+  };
+
   // Rainfall Logs CRUD
   public shared ({ caller }) func createRainfallLog(log : RainfallLog) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -267,6 +299,20 @@ actor {
       func(log) { log.userId == caller }
     );
     filteredLogs.toArray();
+  };
+
+  public shared ({ caller }) func deleteRainfallLog(logId : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete rainfall logs");
+    };
+    let log = switch (rainfallLogs.get(logId)) {
+      case (null) { Runtime.trap("Rainfall log not found") };
+      case (?log) { log };
+    };
+    if (log.userId != caller) {
+      Runtime.trap("Unauthorized: You do not own this log");
+    };
+    rainfallLogs.remove(logId);
   };
 
   // Daily Logs CRUD
@@ -314,6 +360,20 @@ actor {
     filteredLogs.toArray();
   };
 
+  public shared ({ caller }) func deleteDailyLog(logId : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete daily logs");
+    };
+    let log = switch (dailyLogs.get(logId)) {
+      case (null) { Runtime.trap("Daily log not found") };
+      case (?log) { log };
+    };
+    if (log.userId != caller) {
+      Runtime.trap("Unauthorized: You do not own this log");
+    };
+    dailyLogs.remove(logId);
+  };
+
   // Crop Yields CRUD
   public shared ({ caller }) func createCropYield(yield : CropYield) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -355,6 +415,20 @@ actor {
       func(yield) { yield.userId == caller }
     );
     filteredYields.toArray();
+  };
+
+  public shared ({ caller }) func deleteCropYield(yieldId : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete crop yields");
+    };
+    let yield = switch (cropYields.get(yieldId)) {
+      case (null) { Runtime.trap("Crop yield not found") };
+      case (?yield) { yield };
+    };
+    if (yield.userId != caller) {
+      Runtime.trap("Unauthorized: You do not own this crop yield");
+    };
+    cropYields.remove(yieldId);
   };
 
   // Forecasts CRUD
@@ -441,6 +515,20 @@ actor {
       func(entry) { entry.userId == caller }
     );
     filteredEntries.toArray();
+  };
+
+  public shared ({ caller }) func deleteRevenueEntry(entryId : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete revenue entries");
+    };
+    let entry = switch (revenueEntries.get(entryId)) {
+      case (null) { Runtime.trap("Revenue entry not found") };
+      case (?entry) { entry };
+    };
+    if (entry.userId != caller) {
+      Runtime.trap("Unauthorized: You do not own this entry");
+    };
+    revenueEntries.remove(entryId);
   };
 
   // Analytics queries
