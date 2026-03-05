@@ -1,34 +1,29 @@
 # FarmFlow360
 
 ## Current State
-- Full-stack farm management app with Dashboard, DailyLogs, Rainfall, Labour, Harvest, Estates, Analytics, Weather screens.
-- Bottom nav with 7 tabs (Home, Logs, Rain, Labour, Analytics, Harvest, Weather).
-- `ProfileSetup` modal appears once on first login to let users enter their name.
-- `useUserProfile` / `useSaveUserProfile` hooks exist and call `getCallerUserProfile` / `saveCallerUserProfile` backend APIs.
-- No way to update name after initial setup.
+FarmFlow360 is a mobile-first React web app with a Motoko backend on ICP. It has authentication, dashboard, estates, labour, rainfall, harvest, daily logs, weather, and profile screens. No PWA support currently exists -- no manifest, no service worker, no install prompt.
 
 ## Requested Changes (Diff)
 
 ### Add
-- New `ProfileScreen` component: a dedicated settings/profile page accessible from the app.
-- A "Profile" tab in the bottom navigation bar (User/person icon).
-- Profile screen shows: current name (editable), save button, and a sign-out option.
+- `manifest.webmanifest` in `public/` with app name, short name, icons, theme color, background color, display mode (standalone), start URL, orientation (portrait)
+- PWA icons: 192x192 and 512x512 versions of the FarmFlow360 app icon in `public/`
+- `<link rel="manifest">` and `<meta name="theme-color">` tags in `index.html`
+- `<meta name="apple-mobile-web-app-capable">` and related Apple PWA meta tags in `index.html`
+- `vite-plugin-pwa` or manual service worker registration for offline caching of app shell
+- Install prompt banner/toast in the app (shown when browser fires `beforeinstallprompt`)
 
 ### Modify
-- `App.tsx`: Add "profile" to the `Tab` union type, add profile tab to `NAV_ITEMS`, import and render `ProfileScreen` in the tab switcher.
+- `index.html` -- add manifest link, theme-color meta, Apple PWA meta tags, title "FarmFlow360"
+- `vite.config.js` -- add `vite-plugin-pwa` plugin with workbox config for caching app shell
 
 ### Remove
-- Nothing removed.
+- Nothing
 
 ## Implementation Plan
-1. Create `src/frontend/src/components/ProfileScreen.tsx`:
-   - Fetch current profile with `useUserProfile`.
-   - Pre-fill name input with `profile?.name`.
-   - On save, call `useSaveUserProfile` mutation with the updated name.
-   - Show success/error toast.
-   - Show a sign-out / logout button using `useInternetIdentity`.
-   - Match the existing Gen Z farm aesthetic (farm-gradient, rounded-xl cards, etc.).
-2. Update `App.tsx`:
-   - Add `"profile"` to the `Tab` union.
-   - Add `{ id: "profile", label: "Profile", icon: UserCircle }` to `NAV_ITEMS`.
-   - Add `case "profile": return <ProfileScreen />;` to the tab switcher.
+1. Generate PWA icons (192x192 and 512x512) using generate_image
+2. Create `public/manifest.webmanifest` with correct FarmFlow360 metadata
+3. Update `index.html` with manifest link, theme-color, Apple PWA meta tags, and correct title
+4. Install `vite-plugin-pwa` and configure it in `vite.config.js` with workbox for app shell caching
+5. Add install prompt UI (small banner or toast) that appears when the browser supports PWA install
+6. Validate and deploy

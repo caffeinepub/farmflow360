@@ -19,6 +19,7 @@ import Dashboard from "./components/Dashboard";
 import EstatesScreen from "./components/EstatesScreen";
 import HarvestScreen from "./components/HarvestScreen";
 import LabourScreen from "./components/LabourScreen";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import ProfileScreen from "./components/ProfileScreen";
 import ProfileSetup from "./components/ProfileSetup";
 import RainfallScreen from "./components/RainfallScreen";
@@ -111,6 +112,7 @@ export default function App() {
     <div className="min-h-screen bg-background flex flex-col">
       <Toaster richColors position="top-center" />
       <ProfileSetup />
+      <PWAInstallPrompt />
 
       {/* App container — phone-like max width */}
       <div className="flex-1 w-full max-w-sm mx-auto relative">

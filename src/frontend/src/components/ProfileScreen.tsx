@@ -9,6 +9,8 @@ import {
   Leaf,
   Loader2,
   LogOut,
+  Share2,
+  Smartphone,
   User,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -23,6 +25,12 @@ export default function ProfileScreen() {
   const { clear } = useInternetIdentity();
   const [name, setName] = useState("");
   const [saved, setSaved] = useState(false);
+
+  // Detect mobile browser (not standalone PWA)
+  const isMobileBrowser =
+    typeof navigator !== "undefined" &&
+    /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) &&
+    !window.matchMedia("(display-mode: standalone)").matches;
 
   // Pre-fill with existing profile name
   useEffect(() => {
@@ -174,6 +182,68 @@ export default function ProfileScreen() {
             </Button>
           </div>
         </motion.div>
+
+        {/* Add to Home Screen tip — mobile only */}
+        {isMobileBrowser && (
+          <motion.div
+            data-ocid="profile.panel"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="rounded-2xl border border-border overflow-hidden"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.95 0.04 140) 0%, oklch(0.92 0.06 142) 100%)",
+            }}
+          >
+            <div className="p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl farm-gradient-light flex items-center justify-center">
+                  <Smartphone className="w-4 h-4 text-white" />
+                </div>
+                <h2 className="font-display font-bold text-foreground text-base">
+                  Install as App
+                </h2>
+              </div>
+
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Get the full app experience — faster loading, full-screen, and
+                works with cached data offline.
+              </p>
+
+              <div className="space-y-2">
+                <div className="flex items-start gap-2.5 bg-white/70 rounded-xl p-3">
+                  <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">
+                      iPhone (Safari)
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Tap the Share icon → &ldquo;Add to Home Screen&rdquo;
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 bg-white/70 rounded-xl p-3">
+                  <div className="w-6 h-6 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Smartphone className="w-3.5 h-3.5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">
+                      Android (Chrome)
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Tap the menu (⋮) → &ldquo;Install App&rdquo; or &ldquo;Add
+                      to Home Screen&rdquo;
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Danger Zone / Sign Out */}
         <motion.div
