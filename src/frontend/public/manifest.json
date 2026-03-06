@@ -1,0 +1,24 @@
+{
+  "name": "Plantation 360",
+  "short_name": "Plantation 360",
+  "description": "Estate Management App",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1a0f",
+  "theme_color": "#16a34a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/assets/generated/pwa-icon-192.dim_192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/pwa-icon-512.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
