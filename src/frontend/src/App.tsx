@@ -62,13 +62,13 @@ export default function App() {
         <div className="text-center space-y-4">
           <div className="w-16 h-16 rounded-3xl bg-white/20 flex items-center justify-center mx-auto">
             <img
-              src="/assets/generated/farmflow-logo-transparent.dim_120x120.png"
-              alt="FarmFlow360"
+              src="/assets/generated/plantation360-logo-transparent.dim_120x120.png"
+              alt="Plantation 360"
               className="w-10 h-10 object-contain"
             />
           </div>
           <Skeleton className="h-4 w-32 bg-white/20 mx-auto" />
-          <p className="text-white/60 text-sm">Loading FarmFlow360...</p>
+          <p className="text-white/60 text-sm">Loading Plantation 360...</p>
         </div>
       </div>
     );

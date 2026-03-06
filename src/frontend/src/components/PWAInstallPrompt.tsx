@@ -8,7 +8,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-const DISMISSED_KEY = "farmflow360_pwa_prompt_dismissed";
+const DISMISSED_KEY = "plantation360_pwa_prompt_dismissed";
 
 export default function PWAInstallPrompt() {
   const [promptEvent, setPromptEvent] =
@@ -71,7 +71,7 @@ export default function PWAInstallPrompt() {
               {/* Text */}
               <div className="flex-1 min-w-0">
                 <p className="text-white font-semibold text-sm leading-tight">
-                  Install FarmFlow360
+                  Install Plantation 360
                 </p>
                 <p className="text-white/70 text-xs mt-0.5 leading-tight">
                   Add as an app on your phone

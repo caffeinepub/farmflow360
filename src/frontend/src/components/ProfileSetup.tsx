@@ -30,7 +30,7 @@ export default function ProfileSetup() {
 
     try {
       await saveProfile.mutateAsync({ name: name.trim() });
-      toast.success(`Welcome to FarmFlow360, ${name.trim()}! 🌿`);
+      toast.success(`Welcome to Plantation 360, ${name.trim()}! 🌿`);
       setShowSetup(false);
     } catch {
       toast.error("Failed to save profile. Please try again.");
@@ -60,7 +60,7 @@ export default function ProfileSetup() {
                 <Leaf className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-xl font-display font-bold text-foreground">
-                Welcome to FarmFlow360! 🌱
+                Welcome to Plantation 360! 🌱
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Let&apos;s set up your farmer profile

@@ -292,7 +292,7 @@ export default function ProfileScreen() {
               <Leaf className="w-3 h-3 text-white" />
             </div>
             <span className="font-display font-bold text-sm text-foreground">
-              FarmFlow360
+              Plantation 360
             </span>
           </div>
           <p className="text-xs text-muted-foreground">

@@ -36,8 +36,8 @@ export default function AuthScreen() {
             className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-sm mb-4 shadow-green"
           >
             <img
-              src="/assets/generated/farmflow-logo-transparent.dim_120x120.png"
-              alt="FarmFlow360"
+              src="/assets/generated/plantation360-logo-transparent.dim_120x120.png"
+              alt="Plantation 360"
               className="w-12 h-12 object-contain"
             />
           </motion.div>
@@ -47,7 +47,7 @@ export default function AuthScreen() {
             transition={{ delay: 0.2 }}
             className="text-3xl font-display font-bold text-white"
           >
-            FarmFlow360
+            Plantation 360
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -55,7 +55,7 @@ export default function AuthScreen() {
             transition={{ delay: 0.3 }}
             className="text-white/70 text-sm mt-1 font-body"
           >
-            Smart farming for the next gen 🌿
+            Estate Management App
           </motion.p>
         </div>
 
