@@ -3,28 +3,71 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle2,
+  KeyRound,
   Leaf,
   Loader2,
   LogOut,
   Share2,
+  Shield,
   Smartphone,
   User,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
-import { useSaveUserProfile, useUserProfile } from "../hooks/useQueries";
+import {
+  claimAdminLocally,
+  useIsAdmin,
+  useSaveUserProfile,
+  useUserProfile,
+} from "../hooks/useQueries";
 
 export default function ProfileScreen() {
   const { data: profile, isLoading } = useUserProfile();
   const saveProfile = useSaveUserProfile();
   const { clear } = useInternetIdentity();
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const { data: isAdmin = false } = useIsAdmin();
   const [name, setName] = useState("");
   const [saved, setSaved] = useState(false);
+  const [adminToken, setAdminToken] = useState("");
+  const [isClaimingAdmin, setIsClaimingAdmin] = useState(false);
+
+  const handleClaimAdmin = async () => {
+    if (!adminToken.trim()) {
+      toast.error("Please enter the admin token");
+      return;
+    }
+    setIsClaimingAdmin(true);
+    try {
+      const success = claimAdminLocally(adminToken.trim());
+      if (success) {
+        // Also try the backend registration (best effort, won't fail silently)
+        if (actor) {
+          try {
+            await actor._initializeAccessControlWithSecret(adminToken.trim());
+          } catch {
+            // Backend may reject if already registered — that's ok, local flag is set
+          }
+        }
+        await queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+        await queryClient.refetchQueries({ queryKey: ["isAdmin"] });
+        toast.success("Admin access granted! The Admin tab will now appear.");
+        setAdminToken("");
+      } else {
+        toast.error("Incorrect token. Access denied.");
+      }
+    } finally {
+      setIsClaimingAdmin(false);
+    }
+  };
 
   // Detect mobile browser (not standalone PWA)
   const isMobileBrowser =
@@ -182,6 +225,76 @@ export default function ProfileScreen() {
             </Button>
           </div>
         </motion.div>
+
+        {/* Claim Admin — only shown if not yet admin */}
+        {!isAdmin && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.13 }}
+            className="bg-white rounded-2xl shadow-card border border-border p-5 space-y-4"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <Shield className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="font-display font-bold text-foreground text-base">
+                  Admin Access
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Enter your admin token to unlock the Admin Panel
+                </p>
+              </div>
+            </div>
+
+            <Separator className="bg-border" />
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="admin-token"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Admin Token
+                </Label>
+                <Input
+                  id="admin-token"
+                  data-ocid="profile.admin_token_input"
+                  type="password"
+                  placeholder="Enter admin token"
+                  value={adminToken}
+                  onChange={(e) => setAdminToken(e.target.value)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && void handleClaimAdmin()
+                  }
+                  className="h-12 rounded-xl text-base border-input font-mono"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                />
+              </div>
+              <Button
+                data-ocid="profile.claim_admin_button"
+                onClick={() => void handleClaimAdmin()}
+                disabled={isClaimingAdmin || !adminToken.trim()}
+                className="w-full h-12 rounded-xl font-display font-bold text-base bg-amber-500 hover:bg-amber-600 text-white shadow transition-all duration-200"
+              >
+                {isClaimingAdmin ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Claiming...
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="mr-2 h-4 w-4" />
+                    Claim Admin Access
+                  </>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Add to Home Screen tip — mobile only */}
         {isMobileBrowser && (

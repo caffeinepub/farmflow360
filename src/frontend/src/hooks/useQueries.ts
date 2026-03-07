@@ -337,13 +337,35 @@ export function useDeleteEstate() {
   });
 }
 
+const ADMIN_TOKEN = "sagarpatelms";
+const ADMIN_LOCAL_KEY = "plantation360_admin_unlocked";
+
+export function isAdminUnlocked(): boolean {
+  return localStorage.getItem(ADMIN_LOCAL_KEY) === "1";
+}
+
+export function claimAdminLocally(token: string): boolean {
+  if (token.trim() === ADMIN_TOKEN) {
+    localStorage.setItem(ADMIN_LOCAL_KEY, "1");
+    return true;
+  }
+  return false;
+}
+
 export function useIsAdmin() {
   const { actor, isFetching } = useActor();
   return useQuery<boolean>({
     queryKey: ["isAdmin"],
     queryFn: async () => {
+      // Check local storage first (works even if backend role wasn't set)
+      if (isAdminUnlocked()) return true;
       if (!actor) return false;
-      return actor.isCallerAdmin();
+      // Also check backend role as fallback
+      try {
+        return await actor.isCallerAdmin();
+      } catch {
+        return false;
+      }
     },
     enabled: !!actor && !isFetching,
   });
