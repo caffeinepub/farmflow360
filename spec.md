@@ -1,29 +1,40 @@
-# FarmFlow360
+# Plantation 360
 
 ## Current State
-FarmFlow360 is a mobile-first React web app with a Motoko backend on ICP. It has authentication, dashboard, estates, labour, rainfall, harvest, daily logs, weather, and profile screens. No PWA support currently exists -- no manifest, no service worker, no install prompt.
+Full-stack estate management mobile web app with:
+- Authentication via Internet Identity
+- Estates, Labour, Rainfall, Daily Logs, Harvest, Analytics, Weather, and Profile screens
+- Role-based access control (authorization component) with admin/user/guest roles
+- Backend exposes `isCallerAdmin()` and `getCallerUserRole()` but has no admin-only data query endpoints
+- No admin panel exists in the frontend
 
 ## Requested Changes (Diff)
 
 ### Add
-- `manifest.webmanifest` in `public/` with app name, short name, icons, theme color, background color, display mode (standalone), start URL, orientation (portrait)
-- PWA icons: 192x192 and 512x512 versions of the FarmFlow360 app icon in `public/`
-- `<link rel="manifest">` and `<meta name="theme-color">` tags in `index.html`
-- `<meta name="apple-mobile-web-app-capable">` and related Apple PWA meta tags in `index.html`
-- `vite-plugin-pwa` or manual service worker registration for offline caching of app shell
-- Install prompt banner/toast in the app (shown when browser fires `beforeinstallprompt`)
+- Backend: Admin-only query functions to retrieve all users' data aggregates (total users, total estates, total labour entries, total rainfall logs, total harvest logs, total daily logs, total revenue)
+- Backend: Admin function to list all registered user principals with their profiles and basic stats
+- Frontend: `AdminPanelScreen` component -- admin-only screen showing:
+  - App-wide stats: total users, total estates, total logs, total revenue across all users
+  - User list: each user's principal (shortened), profile name, and their data counts
+  - Role management: ability to assign/revoke admin role for any user
+- Frontend: Admin tab in bottom nav, only visible when `isCallerAdmin()` returns true
+- Frontend: Route `admin` added to Tab type and App.tsx
 
 ### Modify
-- `index.html` -- add manifest link, theme-color meta, Apple PWA meta tags, title "FarmFlow360"
-- `vite.config.js` -- add `vite-plugin-pwa` plugin with workbox config for caching app shell
+- Backend `main.mo`: Add admin-only query functions using `AccessControl.isAdmin` guard
+- `App.tsx`: Conditionally add "Admin" nav item and render `AdminPanelScreen` based on admin check
 
 ### Remove
-- Nothing
+- Nothing removed
 
 ## Implementation Plan
-1. Generate PWA icons (192x192 and 512x512) using generate_image
-2. Create `public/manifest.webmanifest` with correct FarmFlow360 metadata
-3. Update `index.html` with manifest link, theme-color, Apple PWA meta tags, and correct title
-4. Install `vite-plugin-pwa` and configure it in `vite.config.js` with workbox for app shell caching
-5. Add install prompt UI (small banner or toast) that appears when the browser supports PWA install
-6. Validate and deploy
+1. Add backend functions in `main.mo`:
+   - `getAllEstates()` -- admin only, returns all estates
+   - `getAllLabourEntries()` -- admin only
+   - `getAllRainfallLogs()` -- admin only
+   - `getAllDailyLogs()` -- admin only
+   - `getAllRevenueEntries()` -- admin only
+   - `getAllUserProfiles()` -- admin only, returns list of {principal, profile}
+2. Update `backend.d.ts` to expose new admin functions
+3. Create `AdminPanelScreen.tsx` frontend component with stats cards and user list
+4. Update `App.tsx` to check `isCallerAdmin()` on mount and conditionally show admin nav tab

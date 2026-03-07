@@ -337,6 +337,18 @@ export function useDeleteEstate() {
   });
 }
 
+export function useIsAdmin() {
+  const { actor, isFetching } = useActor();
+  return useQuery<boolean>({
+    queryKey: ["isAdmin"],
+    queryFn: async () => {
+      if (!actor) return false;
+      return actor.isCallerAdmin();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
 // ─── Streak Calculation ───────────────────────────────────────────────────────
 
 export function calculateStreak(dailyLogs: DailyLog[]): number {

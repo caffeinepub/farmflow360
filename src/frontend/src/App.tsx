@@ -6,12 +6,14 @@ import {
   Cloud,
   CloudRain,
   Home,
+  Shield,
   UserCircle,
   Users,
   Wheat,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import AdminPanelScreen from "./components/AdminPanelScreen";
 import AnalyticsScreen from "./components/AnalyticsScreen";
 import AuthScreen from "./components/AuthScreen";
 import DailyLogsScreen from "./components/DailyLogsScreen";
@@ -25,6 +27,7 @@ import ProfileSetup from "./components/ProfileSetup";
 import RainfallScreen from "./components/RainfallScreen";
 import WeatherScreen from "./components/WeatherScreen";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
+import { useIsAdmin } from "./hooks/useQueries";
 
 type Tab =
   | "home"
@@ -35,9 +38,10 @@ type Tab =
   | "analytics"
   | "harvest"
   | "weather"
-  | "profile";
+  | "profile"
+  | "admin";
 
-const NAV_ITEMS: {
+const BASE_NAV_ITEMS: {
   id: Tab;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -55,6 +59,11 @@ const NAV_ITEMS: {
 export default function App() {
   const { identity, isInitializing } = useInternetIdentity();
   const [activeTab, setActiveTab] = useState<Tab>("home");
+  const { data: isAdmin = false } = useIsAdmin();
+
+  const NAV_ITEMS = isAdmin
+    ? [...BASE_NAV_ITEMS, { id: "admin" as Tab, label: "Admin", icon: Shield }]
+    : BASE_NAV_ITEMS;
 
   if (isInitializing) {
     return (
@@ -103,6 +112,8 @@ export default function App() {
         return <WeatherScreen />;
       case "profile":
         return <ProfileScreen />;
+      case "admin":
+        return <AdminPanelScreen />;
       default:
         return <Dashboard onNavigate={(tab) => setActiveTab(tab as Tab)} />;
     }
@@ -133,7 +144,7 @@ export default function App() {
 
         {/* Bottom Navigation */}
         <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm bg-white/95 backdrop-blur-md border-t border-border bottom-safe z-50">
-          <div className="flex items-center justify-around px-2 py-2">
+          <div className="flex items-center overflow-x-auto scrollbar-hide px-2 py-2 gap-1 snap-x snap-mandatory">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -143,7 +154,7 @@ export default function App() {
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
                   data-ocid={`nav.${item.id}_tab`}
-                  className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 min-w-[52px] ${
+                  className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 flex-shrink-0 min-w-[58px] snap-start ${
                     isActive
                       ? "bg-farm-pale text-farm-mid"
                       : "text-muted-foreground hover:text-foreground"
