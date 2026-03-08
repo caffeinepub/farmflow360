@@ -1,40 +1,46 @@
 # Plantation 360
 
 ## Current State
-Full-stack estate management mobile web app with:
-- Authentication via Internet Identity
-- Estates, Labour, Rainfall, Daily Logs, Harvest, Analytics, Weather, and Profile screens
-- Role-based access control (authorization component) with admin/user/guest roles
-- Backend exposes `isCallerAdmin()` and `getCallerUserRole()` but has no admin-only data query endpoints
-- No admin panel exists in the frontend
+The app has an Admin Panel tab (visible only when admin token is entered). The current admin panel shows the **logged-in admin's own** estate count, labour entries, revenue, and rainfall stats -- the same data any user sees about themselves. There is a Role Management section to assign roles to other users by Principal ID. There is no ability to see or manage other users' data.
+
+Backend only provides `getUserXxx()` functions that filter by the caller's Principal. No admin-level "get all" or "delete any" functions exist.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Backend: Admin-only query functions to retrieve all users' data aggregates (total users, total estates, total labour entries, total rainfall logs, total harvest logs, total daily logs, total revenue)
-- Backend: Admin function to list all registered user principals with their profiles and basic stats
-- Frontend: `AdminPanelScreen` component -- admin-only screen showing:
-  - App-wide stats: total users, total estates, total logs, total revenue across all users
-  - User list: each user's principal (shortened), profile name, and their data counts
-  - Role management: ability to assign/revoke admin role for any user
-- Frontend: Admin tab in bottom nav, only visible when `isCallerAdmin()` returns true
-- Frontend: Route `admin` added to Tab type and App.tsx
+- Backend: `adminGetAllEstates()` - returns all estates across all users (admin only)
+- Backend: `adminGetAllLabourEntries()` - returns all labour entries across all users (admin only)
+- Backend: `adminGetAllRainfallLogs()` - returns all rainfall logs across all users (admin only)
+- Backend: `adminGetAllDailyLogs()` - returns all daily logs across all users (admin only)
+- Backend: `adminGetAllRevenueEntries()` - returns all revenue entries across all users (admin only)
+- Backend: `adminGetAllCropYields()` - returns all crop yields across all users (admin only)
+- Backend: `adminDeleteEstate(estateId)` - admin can delete any estate (admin only)
+- Backend: `adminDeleteLabourEntry(entryId)` - admin can delete any labour entry (admin only)
+- Backend: `adminDeleteRainfallLog(logId)` - admin can delete any rainfall log (admin only)
+- Backend: `adminDeleteDailyLog(logId)` - admin can delete any daily log (admin only)
+- Backend: `adminDeleteRevenueEntry(entryId)` - admin can delete any revenue entry (admin only)
+- Backend: `adminDeleteCropYield(yieldId)` - admin can delete any crop yield (admin only)
+- Backend: `adminGetAllUsers()` - returns list of all user Principals with profiles (admin only)
+- Backend: `adminGetUserStats(userId)` - returns aggregated stats for a specific user (admin only)
+- Frontend: Admin panel "Users" tab - list all registered users with their estate count, entry counts
+- Frontend: Admin panel "All Data" tabs - tabbed view showing all data across all users (Estates, Labour, Rainfall, Harvest, Daily Logs, Revenue)
+- Frontend: Delete buttons on each record in admin view (calls adminDelete* endpoints)
+- Frontend: Per-user drill-down: tap a user to see all their data (estates, logs, etc.)
 
 ### Modify
-- Backend `main.mo`: Add admin-only query functions using `AccessControl.isAdmin` guard
-- `App.tsx`: Conditionally add "Admin" nav item and render `AdminPanelScreen` based on admin check
+- AdminPanelScreen: Replace "your own stats" cards with platform-wide aggregated stats (total users, total estates across all users, total labour entries, total revenue)
+- AdminPanelScreen: Add tabbed navigation within admin panel (Overview, Users, Data)
+- useQueries.ts: Add admin query hooks for all the new admin backend functions
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Add backend functions in `main.mo`:
-   - `getAllEstates()` -- admin only, returns all estates
-   - `getAllLabourEntries()` -- admin only
-   - `getAllRainfallLogs()` -- admin only
-   - `getAllDailyLogs()` -- admin only
-   - `getAllRevenueEntries()` -- admin only
-   - `getAllUserProfiles()` -- admin only, returns list of {principal, profile}
-2. Update `backend.d.ts` to expose new admin functions
-3. Create `AdminPanelScreen.tsx` frontend component with stats cards and user list
-4. Update `App.tsx` to check `isCallerAdmin()` on mount and conditionally show admin nav tab
+1. Update `main.mo` with all `adminGet*` and `adminDelete*` functions, all guarded by `isAdmin` check
+2. Regenerate `backend.d.ts` with new admin function signatures
+3. Update `useQueries.ts` with new admin hooks
+4. Rebuild `AdminPanelScreen.tsx` with:
+   - Tabbed layout: Overview | Users | Data
+   - Overview: platform-wide stats (total users, estates, labour, revenue)
+   - Users tab: list of all users, each expandable to show their estates and data counts
+   - Data tab: sub-tabs for each data type (Estates, Labour, Rainfall, DailyLogs, Harvest, Revenue) with delete capability

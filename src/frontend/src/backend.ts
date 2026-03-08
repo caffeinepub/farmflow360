@@ -161,6 +161,19 @@ export enum UserRole {
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
+    adminDeleteCropYield(yieldId: bigint): Promise<void>;
+    adminDeleteDailyLog(logId: bigint): Promise<void>;
+    adminDeleteEstate(estateId: bigint): Promise<void>;
+    adminDeleteLabourEntry(entryId: bigint): Promise<void>;
+    adminDeleteRainfallLog(logId: bigint): Promise<void>;
+    adminDeleteRevenueEntry(entryId: bigint): Promise<void>;
+    adminGetAllCropYields(): Promise<Array<CropYield>>;
+    adminGetAllDailyLogs(): Promise<Array<DailyLog>>;
+    adminGetAllEstates(): Promise<Array<Estate>>;
+    adminGetAllLabourEntries(): Promise<Array<LabourEntry>>;
+    adminGetAllRainfallLogs(): Promise<Array<RainfallLog>>;
+    adminGetAllRevenueEntries(): Promise<Array<RevenueEntry>>;
+    adminGetAllUserPrincipals(): Promise<Array<Principal>>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createCropYield(yield: CropYield): Promise<bigint>;
     createDailyLog(log: DailyLog): Promise<bigint>;
@@ -212,6 +225,188 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor._initializeAccessControlWithSecret(arg0);
+            return result;
+        }
+    }
+    async adminDeleteCropYield(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminDeleteCropYield(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminDeleteCropYield(arg0);
+            return result;
+        }
+    }
+    async adminDeleteDailyLog(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminDeleteDailyLog(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminDeleteDailyLog(arg0);
+            return result;
+        }
+    }
+    async adminDeleteEstate(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminDeleteEstate(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminDeleteEstate(arg0);
+            return result;
+        }
+    }
+    async adminDeleteLabourEntry(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminDeleteLabourEntry(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminDeleteLabourEntry(arg0);
+            return result;
+        }
+    }
+    async adminDeleteRainfallLog(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminDeleteRainfallLog(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminDeleteRainfallLog(arg0);
+            return result;
+        }
+    }
+    async adminDeleteRevenueEntry(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminDeleteRevenueEntry(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminDeleteRevenueEntry(arg0);
+            return result;
+        }
+    }
+    async adminGetAllCropYields(): Promise<Array<CropYield>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAllCropYields();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminGetAllCropYields();
+            return result;
+        }
+    }
+    async adminGetAllDailyLogs(): Promise<Array<DailyLog>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAllDailyLogs();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminGetAllDailyLogs();
+            return result;
+        }
+    }
+    async adminGetAllEstates(): Promise<Array<Estate>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAllEstates();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminGetAllEstates();
+            return result;
+        }
+    }
+    async adminGetAllLabourEntries(): Promise<Array<LabourEntry>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAllLabourEntries();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminGetAllLabourEntries();
+            return result;
+        }
+    }
+    async adminGetAllRainfallLogs(): Promise<Array<RainfallLog>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAllRainfallLogs();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminGetAllRainfallLogs();
+            return result;
+        }
+    }
+    async adminGetAllRevenueEntries(): Promise<Array<RevenueEntry>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAllRevenueEntries();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminGetAllRevenueEntries();
+            return result;
+        }
+    }
+    async adminGetAllUserPrincipals(): Promise<Array<Principal>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAllUserPrincipals();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminGetAllUserPrincipals();
             return result;
         }
     }

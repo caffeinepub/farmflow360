@@ -78,6 +78,19 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    adminDeleteCropYield(yieldId: bigint): Promise<void>;
+    adminDeleteDailyLog(logId: bigint): Promise<void>;
+    adminDeleteEstate(estateId: bigint): Promise<void>;
+    adminDeleteLabourEntry(entryId: bigint): Promise<void>;
+    adminDeleteRainfallLog(logId: bigint): Promise<void>;
+    adminDeleteRevenueEntry(entryId: bigint): Promise<void>;
+    adminGetAllCropYields(): Promise<Array<CropYield>>;
+    adminGetAllDailyLogs(): Promise<Array<DailyLog>>;
+    adminGetAllEstates(): Promise<Array<Estate>>;
+    adminGetAllLabourEntries(): Promise<Array<LabourEntry>>;
+    adminGetAllRainfallLogs(): Promise<Array<RainfallLog>>;
+    adminGetAllRevenueEntries(): Promise<Array<RevenueEntry>>;
+    adminGetAllUserPrincipals(): Promise<Array<Principal>>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createCropYield(yield: CropYield): Promise<bigint>;
     createDailyLog(log: DailyLog): Promise<bigint>;

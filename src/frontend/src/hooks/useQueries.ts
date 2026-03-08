@@ -1,3 +1,4 @@
+import type { Principal } from "@icp-sdk/core/principal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   CropYield,
@@ -368,6 +369,179 @@ export function useIsAdmin() {
       }
     },
     enabled: !!actor && !isFetching,
+  });
+}
+
+// ─── Admin Queries ────────────────────────────────────────────────────────────
+
+export function useAdminAllEstates() {
+  const { actor, isFetching } = useActor();
+  return useQuery<Estate[]>({
+    queryKey: ["adminEstates"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.adminGetAllEstates();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAdminAllLabourEntries() {
+  const { actor, isFetching } = useActor();
+  return useQuery<LabourEntry[]>({
+    queryKey: ["adminLabourEntries"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.adminGetAllLabourEntries();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAdminAllRainfallLogs() {
+  const { actor, isFetching } = useActor();
+  return useQuery<RainfallLog[]>({
+    queryKey: ["adminRainfallLogs"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.adminGetAllRainfallLogs();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAdminAllDailyLogs() {
+  const { actor, isFetching } = useActor();
+  return useQuery<DailyLog[]>({
+    queryKey: ["adminDailyLogs"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.adminGetAllDailyLogs();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAdminAllRevenueEntries() {
+  const { actor, isFetching } = useActor();
+  return useQuery<RevenueEntry[]>({
+    queryKey: ["adminRevenueEntries"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.adminGetAllRevenueEntries();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAdminAllCropYields() {
+  const { actor, isFetching } = useActor();
+  return useQuery<CropYield[]>({
+    queryKey: ["adminCropYields"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.adminGetAllCropYields();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAdminAllUserPrincipals() {
+  const { actor, isFetching } = useActor();
+  return useQuery<Principal[]>({
+    queryKey: ["adminUserPrincipals"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.adminGetAllUserPrincipals();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+// ─── Admin Mutations ──────────────────────────────────────────────────────────
+
+export function useAdminDeleteEstate() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (estateId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.adminDeleteEstate(estateId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["adminEstates"] });
+      void queryClient.invalidateQueries({ queryKey: ["adminUserPrincipals"] });
+    },
+  });
+}
+
+export function useAdminDeleteLabourEntry() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (entryId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.adminDeleteLabourEntry(entryId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["adminLabourEntries"] });
+    },
+  });
+}
+
+export function useAdminDeleteRainfallLog() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (logId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.adminDeleteRainfallLog(logId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["adminRainfallLogs"] });
+    },
+  });
+}
+
+export function useAdminDeleteDailyLog() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (logId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.adminDeleteDailyLog(logId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["adminDailyLogs"] });
+    },
+  });
+}
+
+export function useAdminDeleteRevenueEntry() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (entryId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.adminDeleteRevenueEntry(entryId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["adminRevenueEntries"] });
+    },
+  });
+}
+
+export function useAdminDeleteCropYield() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (yieldId: bigint) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.adminDeleteCropYield(yieldId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["adminCropYields"] });
+    },
   });
 }
 

@@ -7,8 +7,6 @@ import Float "mo:core/Float";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
-
-
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
@@ -588,5 +586,104 @@ actor {
       total += entry.amount;
     };
     total;
+  };
+
+  // Admin functions
+  public query ({ caller }) func adminGetAllEstates() : async [Estate] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    let estateIter = estates.values();
+    estateIter.toArray();
+  };
+
+  public query ({ caller }) func adminGetAllLabourEntries() : async [LabourEntry] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    let entryIter = labourEntries.values();
+    entryIter.toArray();
+  };
+
+  public query ({ caller }) func adminGetAllRainfallLogs() : async [RainfallLog] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    let logIter = rainfallLogs.values();
+    logIter.toArray();
+  };
+
+  public query ({ caller }) func adminGetAllDailyLogs() : async [DailyLog] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    let logIter = dailyLogs.values();
+    logIter.toArray();
+  };
+
+  public query ({ caller }) func adminGetAllRevenueEntries() : async [RevenueEntry] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    let entryIter = revenueEntries.values();
+    entryIter.toArray();
+  };
+
+  public query ({ caller }) func adminGetAllCropYields() : async [CropYield] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    let yieldIter = cropYields.values();
+    yieldIter.toArray();
+  };
+
+  public query ({ caller }) func adminGetAllUserPrincipals() : async [Principal] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    let keysIter = userProfiles.keys();
+    keysIter.toArray();
+  };
+
+  public shared ({ caller }) func adminDeleteEstate(estateId : Nat) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    estates.remove(estateId);
+  };
+
+  public shared ({ caller }) func adminDeleteLabourEntry(entryId : Nat) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    labourEntries.remove(entryId);
+  };
+
+  public shared ({ caller }) func adminDeleteRainfallLog(logId : Nat) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    rainfallLogs.remove(logId);
+  };
+
+  public shared ({ caller }) func adminDeleteDailyLog(logId : Nat) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    dailyLogs.remove(logId);
+  };
+
+  public shared ({ caller }) func adminDeleteRevenueEntry(entryId : Nat) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    revenueEntries.remove(entryId);
+  };
+
+  public shared ({ caller }) func adminDeleteCropYield(yieldId : Nat) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    cropYields.remove(yieldId);
   };
 };

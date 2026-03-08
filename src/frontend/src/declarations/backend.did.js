@@ -8,11 +8,6 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const UserRole = IDL.Variant({
-  'admin' : IDL.Null,
-  'user' : IDL.Null,
-  'guest' : IDL.Null,
-});
 export const CropYield = IDL.Record({
   'id' : IDL.Nat,
   'yieldKg' : IDL.Float64,
@@ -39,14 +34,6 @@ export const Estate = IDL.Record({
   'name' : IDL.Text,
   'createdAt' : IDL.Int,
   'location' : IDL.Text,
-});
-export const Forecast = IDL.Record({
-  'id' : IDL.Nat,
-  'userId' : IDL.Principal,
-  'cropName' : IDL.Text,
-  'forecastDate' : IDL.Text,
-  'forecastNote' : IDL.Text,
-  'estateId' : IDL.Nat,
 });
 export const LabourEntry = IDL.Record({
   'id' : IDL.Nat,
@@ -75,10 +62,44 @@ export const RevenueEntry = IDL.Record({
   'estateId' : IDL.Nat,
   'amount' : IDL.Float64,
 });
+export const UserRole = IDL.Variant({
+  'admin' : IDL.Null,
+  'user' : IDL.Null,
+  'guest' : IDL.Null,
+});
+export const Forecast = IDL.Record({
+  'id' : IDL.Nat,
+  'userId' : IDL.Principal,
+  'cropName' : IDL.Text,
+  'forecastDate' : IDL.Text,
+  'forecastNote' : IDL.Text,
+  'estateId' : IDL.Nat,
+});
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'adminDeleteCropYield' : IDL.Func([IDL.Nat], [], []),
+  'adminDeleteDailyLog' : IDL.Func([IDL.Nat], [], []),
+  'adminDeleteEstate' : IDL.Func([IDL.Nat], [], []),
+  'adminDeleteLabourEntry' : IDL.Func([IDL.Nat], [], []),
+  'adminDeleteRainfallLog' : IDL.Func([IDL.Nat], [], []),
+  'adminDeleteRevenueEntry' : IDL.Func([IDL.Nat], [], []),
+  'adminGetAllCropYields' : IDL.Func([], [IDL.Vec(CropYield)], ['query']),
+  'adminGetAllDailyLogs' : IDL.Func([], [IDL.Vec(DailyLog)], ['query']),
+  'adminGetAllEstates' : IDL.Func([], [IDL.Vec(Estate)], ['query']),
+  'adminGetAllLabourEntries' : IDL.Func([], [IDL.Vec(LabourEntry)], ['query']),
+  'adminGetAllRainfallLogs' : IDL.Func([], [IDL.Vec(RainfallLog)], ['query']),
+  'adminGetAllRevenueEntries' : IDL.Func(
+      [],
+      [IDL.Vec(RevenueEntry)],
+      ['query'],
+    ),
+  'adminGetAllUserPrincipals' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Principal)],
+      ['query'],
+    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createCropYield' : IDL.Func([CropYield], [IDL.Nat], []),
   'createDailyLog' : IDL.Func([DailyLog], [IDL.Nat], []),
@@ -124,11 +145,6 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const UserRole = IDL.Variant({
-    'admin' : IDL.Null,
-    'user' : IDL.Null,
-    'guest' : IDL.Null,
-  });
   const CropYield = IDL.Record({
     'id' : IDL.Nat,
     'yieldKg' : IDL.Float64,
@@ -155,14 +171,6 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'createdAt' : IDL.Int,
     'location' : IDL.Text,
-  });
-  const Forecast = IDL.Record({
-    'id' : IDL.Nat,
-    'userId' : IDL.Principal,
-    'cropName' : IDL.Text,
-    'forecastDate' : IDL.Text,
-    'forecastNote' : IDL.Text,
-    'estateId' : IDL.Nat,
   });
   const LabourEntry = IDL.Record({
     'id' : IDL.Nat,
@@ -191,10 +199,48 @@ export const idlFactory = ({ IDL }) => {
     'estateId' : IDL.Nat,
     'amount' : IDL.Float64,
   });
+  const UserRole = IDL.Variant({
+    'admin' : IDL.Null,
+    'user' : IDL.Null,
+    'guest' : IDL.Null,
+  });
+  const Forecast = IDL.Record({
+    'id' : IDL.Nat,
+    'userId' : IDL.Principal,
+    'cropName' : IDL.Text,
+    'forecastDate' : IDL.Text,
+    'forecastNote' : IDL.Text,
+    'estateId' : IDL.Nat,
+  });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'adminDeleteCropYield' : IDL.Func([IDL.Nat], [], []),
+    'adminDeleteDailyLog' : IDL.Func([IDL.Nat], [], []),
+    'adminDeleteEstate' : IDL.Func([IDL.Nat], [], []),
+    'adminDeleteLabourEntry' : IDL.Func([IDL.Nat], [], []),
+    'adminDeleteRainfallLog' : IDL.Func([IDL.Nat], [], []),
+    'adminDeleteRevenueEntry' : IDL.Func([IDL.Nat], [], []),
+    'adminGetAllCropYields' : IDL.Func([], [IDL.Vec(CropYield)], ['query']),
+    'adminGetAllDailyLogs' : IDL.Func([], [IDL.Vec(DailyLog)], ['query']),
+    'adminGetAllEstates' : IDL.Func([], [IDL.Vec(Estate)], ['query']),
+    'adminGetAllLabourEntries' : IDL.Func(
+        [],
+        [IDL.Vec(LabourEntry)],
+        ['query'],
+      ),
+    'adminGetAllRainfallLogs' : IDL.Func([], [IDL.Vec(RainfallLog)], ['query']),
+    'adminGetAllRevenueEntries' : IDL.Func(
+        [],
+        [IDL.Vec(RevenueEntry)],
+        ['query'],
+      ),
+    'adminGetAllUserPrincipals' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Principal)],
+        ['query'],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createCropYield' : IDL.Func([CropYield], [IDL.Nat], []),
     'createDailyLog' : IDL.Func([DailyLog], [IDL.Nat], []),
