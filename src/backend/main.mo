@@ -24,6 +24,45 @@ actor {
 
   let userProfiles = Map.empty<Principal, UserProfile>();
 
+  // Users Registry type
+  public type UserRecord = {
+    principalId : Principal;
+    name : Text;
+    role : Text;
+    createdAt : Int;
+  };
+
+  let usersRegistry = Map.empty<Principal, UserRecord>();
+
+  // Stable storage for persistence across upgrades
+  stable var stableUserRoles : [(Principal, AccessControl.UserRole)] = [];
+  stable var stableAdminAssigned : Bool = false;
+  stable var stableUserProfiles : [(Principal, UserProfile)] = [];
+  stable var stableUsersRegistry : [(Principal, UserRecord)] = [];
+
+  system func preupgrade() {
+    stableUserRoles := accessControlState.userRoles.entries().toArray();
+    stableAdminAssigned := accessControlState.adminAssigned;
+    stableUserProfiles := userProfiles.entries().toArray();
+    stableUsersRegistry := usersRegistry.entries().toArray();
+  };
+
+  system func postupgrade() {
+    for ((k, v) in stableUserRoles.vals()) {
+      accessControlState.userRoles.add(k, v);
+    };
+    accessControlState.adminAssigned := stableAdminAssigned;
+    for ((k, v) in stableUserProfiles.vals()) {
+      userProfiles.add(k, v);
+    };
+    for ((k, v) in stableUsersRegistry.vals()) {
+      usersRegistry.add(k, v);
+    };
+    stableUserRoles := [];
+    stableUserProfiles := [];
+    stableUsersRegistry := [];
+  };
+
   // User Profile functions
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -44,6 +83,103 @@ actor {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.add(caller, profile);
+    // Also update name in users registry
+    switch (usersRegistry.get(caller)) {
+      case (?record) {
+        let updated : UserRecord = {
+          principalId = record.principalId;
+          name = profile.name;
+          role = record.role;
+          createdAt = record.createdAt;
+        };
+        usersRegistry.add(caller, updated);
+      };
+      case (null) {
+        let roleText = switch (AccessControl.getUserRole(accessControlState, caller)) {
+          case (#admin) "admin";
+          case (#user) "user";
+          case (#guest) "guest";
+        };
+        let record : UserRecord = {
+          principalId = caller;
+          name = profile.name;
+          role = roleText;
+          createdAt = Time.now();
+        };
+        usersRegistry.add(caller, record);
+      };
+    };
+  };
+
+  // Users Registry functions
+  public shared ({ caller }) func ensureUserInRegistry() : async () {
+    if (caller.isAnonymous()) { return };
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      return;
+    };
+    switch (usersRegistry.get(caller)) {
+      case (?_) {};
+      case (null) {
+        let roleText = switch (AccessControl.getUserRole(accessControlState, caller)) {
+          case (#admin) "admin";
+          case (#user) "user";
+          case (#guest) "guest";
+        };
+        // Try to get name from existing profile
+        let existingName = switch (userProfiles.get(caller)) {
+          case (?p) p.name;
+          case (null) "";
+        };
+        let record : UserRecord = {
+          principalId = caller;
+          name = existingName;
+          role = roleText;
+          createdAt = Time.now();
+        };
+        usersRegistry.add(caller, record);
+      };
+    };
+  };
+
+  // Admin functions for users registry
+  public query ({ caller }) func adminGetAllUsers() : async [UserRecord] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    usersRegistry.values().toArray();
+  };
+
+  public shared ({ caller }) func adminDeleteUserFromRegistry(user : Principal) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    usersRegistry.remove(user);
+    accessControlState.userRoles.remove(user);
+    userProfiles.remove(user);
+  };
+
+  public shared ({ caller }) func adminUpdateUserRole(user : Principal, newRole : AccessControl.UserRole) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Admin only");
+    };
+    AccessControl.assignRole(accessControlState, caller, user, newRole);
+    switch (usersRegistry.get(user)) {
+      case (?record) {
+        let roleText = switch (newRole) {
+          case (#admin) "admin";
+          case (#user) "user";
+          case (#guest) "guest";
+        };
+        let updated : UserRecord = {
+          principalId = record.principalId;
+          name = record.name;
+          role = roleText;
+          createdAt = record.createdAt;
+        };
+        usersRegistry.add(user, updated);
+      };
+      case (null) {};
+    };
   };
 
   // Data types
@@ -534,7 +670,6 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can access analytics");
     };
-    // Sum rainfall from both logs and daily logs
     var total : Float = 0;
     let iter = rainfallLogs.values();
     let filteredLogs = iter.filter(

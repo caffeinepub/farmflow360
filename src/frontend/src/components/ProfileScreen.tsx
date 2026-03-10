@@ -49,15 +49,30 @@ export default function ProfileScreen() {
     try {
       const success = claimAdminLocally(adminToken.trim());
       if (success) {
-        // Also try the backend registration (best effort, won't fail silently)
+        // Upgrade backend role to admin using the secret token
         if (actor) {
           try {
-            await actor._initializeAccessControlWithSecret(adminToken.trim());
-          } catch {
-            // Backend may reject if already registered — that's ok, local flag is set
+            const upgraded = await actor.claimAdminRole(adminToken.trim());
+            if (!upgraded) {
+              toast.error("Incorrect token. Access denied.");
+              return;
+            }
+          } catch (err) {
+            console.error("Backend admin claim error:", err);
+            toast.error(
+              "Failed to verify token with the server. Please try again.",
+            );
+            return;
           }
         }
         await queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+        await queryClient.invalidateQueries({ queryKey: ["adminEstates"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["adminLabourEntries"],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ["adminUserPrincipals"],
+        });
         await queryClient.refetchQueries({ queryKey: ["isAdmin"] });
         toast.success("Admin access granted! The Admin tab will now appear.");
         setAdminToken("");

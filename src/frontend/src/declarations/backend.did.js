@@ -280,6 +280,7 @@ export const idlFactory = ({ IDL }) => {
     'getUserRainfallLogs' : IDL.Func([], [IDL.Vec(RainfallLog)], ['query']),
     'getUserRevenueEntries' : IDL.Func([], [IDL.Vec(RevenueEntry)], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'claimAdminRole' : IDL.Func([IDL.Text], [IDL.Bool], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   });
 };

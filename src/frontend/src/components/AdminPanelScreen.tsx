@@ -58,13 +58,16 @@ import {
   useAdminAllLabourEntries,
   useAdminAllRainfallLogs,
   useAdminAllRevenueEntries,
-  useAdminAllUserPrincipals,
+  useAdminAllUsers,
+  useAdminAssignRole,
   useAdminDeleteCropYield,
   useAdminDeleteDailyLog,
   useAdminDeleteEstate,
   useAdminDeleteLabourEntry,
   useAdminDeleteRainfallLog,
   useAdminDeleteRevenueEntry,
+  useAdminDeleteUser,
+  useAdminUpdateUserRole,
 } from "../hooks/useQueries";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -217,8 +220,7 @@ function OverviewTab({
     useAdminAllEstates();
   const { data: allLabour = [], isLoading: labourLoading } =
     useAdminAllLabourEntries();
-  const { data: allUsers = [], isLoading: usersLoading } =
-    useAdminAllUserPrincipals();
+  const { data: allUsers = [], isLoading: usersLoading } = useAdminAllUsers();
   const { data: allRevenue = [], isLoading: revenueLoading } =
     useAdminAllRevenueEntries();
 
@@ -500,27 +502,98 @@ function OverviewTab({
   );
 }
 
-// ─── Users Tab ────────────────────────────────────────────────────────────────
+function RegistryUserRow({
+  regUser,
+  idx,
+  allEstates,
+  allLabour,
+  allRainfall,
+  onDeleteUser,
+  onUpdateRole,
+  onDeleteEstate,
+  onDeleteLabour,
+  onDeleteRainfall,
+  deletingUser,
+  updatingRole,
+  deletingEstate,
+  deletingLabour,
+  deletingRainfall,
+}: {
+  regUser: {
+    principalId: Principal;
+    name: string;
+    role: string;
+    createdAt: bigint;
+  };
+  idx: number;
+  allEstates: Estate[];
+  allLabour: LabourEntry[];
+  allRainfall: RainfallLog[];
+  onDeleteUser: (user: Principal) => Promise<void>;
+  onUpdateRole: (args: { user: Principal; role: UserRole }) => Promise<void>;
+  onDeleteEstate: (id: bigint) => Promise<void>;
+  onDeleteLabour: (id: bigint) => Promise<void>;
+  onDeleteRainfall: (id: bigint) => Promise<void>;
+  deletingUser: boolean;
+  updatingRole: boolean;
+  deletingEstate: boolean;
+  deletingLabour: boolean;
+  deletingRainfall: boolean;
+}) {
+  const userStr = regUser.principalId.toString();
+  const userEstates = allEstates.filter((e) => e.userId.toString() === userStr);
+  const userLabour = allLabour.filter((l) => l.userId.toString() === userStr);
+  const userRainfall = allRainfall.filter(
+    (r) => r.userId.toString() === userStr,
+  );
+  const [selectedRole, setSelectedRole] = useState<UserRole | "">("");
 
-function UsersTab() {
-  const { data: allUsers = [], isLoading: usersLoading } =
-    useAdminAllUserPrincipals();
-  const { data: allEstates = [], isLoading: estatesLoading } =
-    useAdminAllEstates();
-  const { data: allLabour = [], isLoading: labourLoading } =
-    useAdminAllLabourEntries();
-  const { data: allRainfall = [], isLoading: rainfallLoading } =
-    useAdminAllRainfallLogs();
+  const joinDate = regUser.createdAt
+    ? new Date(Number(regUser.createdAt) / 1_000_000).toLocaleDateString(
+        "en-US",
+        {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        },
+      )
+    : "Unknown";
 
-  const { mutateAsync: deleteEstate, isPending: deletingEstate } =
-    useAdminDeleteEstate();
-  const { mutateAsync: deleteLabour, isPending: deletingLabour } =
-    useAdminDeleteLabourEntry();
-  const { mutateAsync: deleteRainfall, isPending: deletingRainfall } =
-    useAdminDeleteRainfallLog();
+  const roleBadgeClass =
+    regUser.role === "admin"
+      ? "bg-primary/10 text-primary border-primary/20"
+      : regUser.role === "guest"
+        ? "bg-muted text-muted-foreground border-border"
+        : "bg-secondary/60 text-secondary-foreground border-secondary/30";
 
-  const isLoading =
-    usersLoading || estatesLoading || labourLoading || rainfallLoading;
+  const handleAssign = async () => {
+    if (!selectedRole) return;
+    try {
+      await onUpdateRole({
+        user: regUser.principalId,
+        role: selectedRole as UserRole,
+      });
+      toast.success(`Role updated to "${selectedRole}"`);
+      setSelectedRole("");
+    } catch {
+      toast.error("Failed to update role");
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (
+      !window.confirm(
+        `Delete user ${regUser.name || shortPrincipal(regUser.principalId)}? This cannot be undone.`,
+      )
+    )
+      return;
+    try {
+      await onDeleteUser(regUser.principalId);
+      toast.success("User deleted");
+    } catch {
+      toast.error("Failed to delete user");
+    }
+  };
 
   const handleDelete = async (
     fn: (id: bigint) => Promise<void>,
@@ -531,11 +604,289 @@ function UsersTab() {
       return;
     try {
       await fn(id);
-      toast.success(`${label} deleted successfully`);
+      toast.success(`${label} deleted`);
     } catch {
       toast.error(`Failed to delete ${label}`);
     }
   };
+
+  const displayName = regUser.name || "Unnamed User";
+
+  return (
+    <motion.div
+      key={userStr}
+      variants={listVariants.item}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      layout
+      data-ocid={`admin.user.item.${idx + 1}`}
+    >
+      <AccordionItem
+        value={userStr}
+        className="bg-white rounded-xl border border-border overflow-hidden shadow-sm"
+      >
+        <AccordionTrigger
+          data-ocid={`admin.user.panel.${idx + 1}`}
+          className="px-4 py-3 hover:no-underline hover:bg-muted/30 transition-colors"
+        >
+          <div className="flex items-center gap-3 flex-1 text-left">
+            <div className="w-9 h-9 rounded-xl farm-gradient-light flex items-center justify-center flex-shrink-0">
+              <Users className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {displayName}
+                </p>
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded-md border font-medium ${roleBadgeClass}`}
+                >
+                  {regUser.role}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground font-mono truncate">
+                {shortPrincipal(regUser.principalId)}
+              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <Badge
+                  variant="secondary"
+                  className="text-xs h-4 px-1.5 rounded-md"
+                >
+                  {userEstates.length} estate
+                  {userEstates.length !== 1 ? "s" : ""}
+                </Badge>
+                <Badge
+                  variant="secondary"
+                  className="text-xs h-4 px-1.5 rounded-md"
+                >
+                  {userLabour.length} labour
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  Joined {joinDate}
+                </span>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              data-ocid={`admin.user.delete_button.${idx + 1}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleDeleteUser();
+              }}
+              disabled={deletingUser}
+              className="h-7 w-7 p-0 rounded-lg text-destructive hover:bg-destructive/10 flex-shrink-0"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </AccordionTrigger>
+
+        <AccordionContent className="px-3 pb-3 space-y-3">
+          {/* Role Assignment */}
+          <div className="bg-muted/30 rounded-xl p-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" />
+              Change Role
+            </p>
+            <div className="flex gap-2">
+              <Select
+                value={selectedRole}
+                onValueChange={(v) => setSelectedRole(v as UserRole)}
+              >
+                <SelectTrigger
+                  data-ocid={`admin.user.select.${idx + 1}`}
+                  className="h-8 rounded-lg text-xs flex-1 border-input"
+                >
+                  <SelectValue placeholder="Select role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                data-ocid={`admin.user.save_button.${idx + 1}`}
+                onClick={() => void handleAssign()}
+                disabled={!selectedRole || updatingRole}
+                className="h-8 px-3 rounded-lg text-xs farm-gradient-light text-white font-bold"
+              >
+                {updatingRole ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  "Assign"
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Estates */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+              <Building2 className="w-3 h-3" />
+              Estates ({userEstates.length})
+            </p>
+            {userEstates.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic pl-2">
+                No estates
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {userEstates.map((estate, ei) => (
+                  <div
+                    key={estate.id.toString()}
+                    className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">
+                        {estate.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {estate.location}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      data-ocid={`admin.user.estate.delete_button.${ei + 1}`}
+                      onClick={() =>
+                        void handleDelete(onDeleteEstate, estate.id, "estate")
+                      }
+                      disabled={deletingEstate}
+                      className="h-7 w-7 p-0 rounded-lg text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Labour Entries */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+              <UserCog className="w-3 h-3" />
+              Labour Entries ({userLabour.length})
+            </p>
+            {userLabour.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic pl-2">
+                No labour entries
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {userLabour.map((entry, li) => (
+                  <div
+                    key={entry.id.toString()}
+                    className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">
+                        {entry.workerName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {entry.workType} · ${entry.totalAmount}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      data-ocid={`admin.user.labour.delete_button.${li + 1}`}
+                      onClick={() =>
+                        void handleDelete(
+                          onDeleteLabour,
+                          entry.id,
+                          "labour entry",
+                        )
+                      }
+                      disabled={deletingLabour}
+                      className="h-7 w-7 p-0 rounded-lg text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Rainfall Logs */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+              <CloudRain className="w-3 h-3" />
+              Rainfall Logs ({userRainfall.length})
+            </p>
+            {userRainfall.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic pl-2">
+                No rainfall logs
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {userRainfall.map((log, ri) => (
+                  <div
+                    key={log.id.toString()}
+                    className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">
+                        {log.date}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {log.rainfallMM} mm{log.notes ? ` · ${log.notes}` : ""}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      data-ocid={`admin.user.rainfall.delete_button.${ri + 1}`}
+                      onClick={() =>
+                        void handleDelete(
+                          onDeleteRainfall,
+                          log.id,
+                          "rainfall log",
+                        )
+                      }
+                      disabled={deletingRainfall}
+                      className="h-7 w-7 p-0 rounded-lg text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </motion.div>
+  );
+}
+
+function UsersTab() {
+  const { data: registryUsers = [], isLoading: usersLoading } =
+    useAdminAllUsers();
+  const { data: allEstates = [], isLoading: estatesLoading } =
+    useAdminAllEstates();
+  const { data: allLabour = [], isLoading: labourLoading } =
+    useAdminAllLabourEntries();
+  const { data: allRainfall = [], isLoading: rainfallLoading } =
+    useAdminAllRainfallLogs();
+
+  const { mutateAsync: deleteUserFromRegistry, isPending: deletingUser } =
+    useAdminDeleteUser();
+  const { mutateAsync: updateUserRole, isPending: updatingRole } =
+    useAdminUpdateUserRole();
+  const { mutateAsync: deleteEstate, isPending: deletingEstate } =
+    useAdminDeleteEstate();
+  const { mutateAsync: deleteLabour, isPending: deletingLabour } =
+    useAdminDeleteLabourEntry();
+  const { mutateAsync: deleteRainfall, isPending: deletingRainfall } =
+    useAdminDeleteRainfallLog();
+
+  const isLoading =
+    usersLoading || estatesLoading || labourLoading || rainfallLoading;
 
   if (isLoading) {
     return (
@@ -545,7 +896,7 @@ function UsersTab() {
     );
   }
 
-  if (!allUsers.length) {
+  if (!registryUsers.length) {
     return (
       <EmptyState
         message="No registered users yet"
@@ -557,214 +908,31 @@ function UsersTab() {
   return (
     <div className="space-y-2 pt-2">
       <p className="text-xs text-muted-foreground font-medium px-1">
-        {allUsers.length} registered user{allUsers.length !== 1 ? "s" : ""}
+        {registryUsers.length} registered user
+        {registryUsers.length !== 1 ? "s" : ""}
       </p>
       <Accordion type="multiple" className="space-y-2">
         <AnimatePresence>
-          {allUsers.map((user, idx) => {
-            const userStr = user.toString();
-            const userEstates = allEstates.filter(
-              (e) => e.userId.toString() === userStr,
-            );
-            const userLabour = allLabour.filter(
-              (l) => l.userId.toString() === userStr,
-            );
-            const userRainfall = allRainfall.filter(
-              (r) => r.userId.toString() === userStr,
-            );
-
-            return (
-              <motion.div
-                key={userStr}
-                variants={listVariants.item}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                layout
-                data-ocid={`admin.user.item.${idx + 1}`}
-              >
-                <AccordionItem
-                  value={userStr}
-                  className="bg-white rounded-xl border border-border overflow-hidden shadow-sm"
-                >
-                  <AccordionTrigger
-                    data-ocid={`admin.user.view_data_button.${idx + 1}`}
-                    className="px-4 py-3 hover:no-underline hover:bg-muted/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 flex-1 text-left">
-                      <div className="w-9 h-9 rounded-xl farm-gradient-light flex items-center justify-center flex-shrink-0">
-                        <Users className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground font-mono truncate">
-                          {shortPrincipal(user)}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <Badge
-                            variant="secondary"
-                            className="text-xs h-4 px-1.5 rounded-md"
-                          >
-                            {userEstates.length} estate
-                            {userEstates.length !== 1 ? "s" : ""}
-                          </Badge>
-                          <Badge
-                            variant="secondary"
-                            className="text-xs h-4 px-1.5 rounded-md"
-                          >
-                            {userLabour.length} labour
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </AccordionTrigger>
-
-                  <AccordionContent className="px-3 pb-3 space-y-3">
-                    {/* Estates */}
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-                        <Building2 className="w-3 h-3" />
-                        Estates ({userEstates.length})
-                      </p>
-                      {userEstates.length === 0 ? (
-                        <p className="text-xs text-muted-foreground italic pl-2">
-                          No estates
-                        </p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {userEstates.map((estate, ei) => (
-                            <div
-                              key={estate.id.toString()}
-                              className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2"
-                            >
-                              <div>
-                                <p className="text-xs font-semibold text-foreground">
-                                  {estate.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {estate.location} · {estate.areaAcres} acres
-                                </p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                data-ocid={`admin.user.estate.delete_button.${ei + 1}`}
-                                onClick={() =>
-                                  void handleDelete(
-                                    deleteEstate,
-                                    estate.id,
-                                    "estate",
-                                  )
-                                }
-                                disabled={deletingEstate}
-                                className="h-7 w-7 p-0 rounded-lg text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Labour Entries */}
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-                        <UserCog className="w-3 h-3" />
-                        Labour Entries ({userLabour.length})
-                      </p>
-                      {userLabour.length === 0 ? (
-                        <p className="text-xs text-muted-foreground italic pl-2">
-                          No labour entries
-                        </p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {userLabour.map((entry, li) => (
-                            <div
-                              key={entry.id.toString()}
-                              className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2"
-                            >
-                              <div>
-                                <p className="text-xs font-semibold text-foreground">
-                                  {entry.workerName}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {entry.workType} · ${entry.totalAmount}
-                                </p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                data-ocid={`admin.user.labour.delete_button.${li + 1}`}
-                                onClick={() =>
-                                  void handleDelete(
-                                    deleteLabour,
-                                    entry.id,
-                                    "labour entry",
-                                  )
-                                }
-                                disabled={deletingLabour}
-                                className="h-7 w-7 p-0 rounded-lg text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Rainfall Logs */}
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-                        <CloudRain className="w-3 h-3" />
-                        Rainfall Logs ({userRainfall.length})
-                      </p>
-                      {userRainfall.length === 0 ? (
-                        <p className="text-xs text-muted-foreground italic pl-2">
-                          No rainfall logs
-                        </p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {userRainfall.map((log, ri) => (
-                            <div
-                              key={log.id.toString()}
-                              className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2"
-                            >
-                              <div>
-                                <p className="text-xs font-semibold text-foreground">
-                                  {log.date}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {log.rainfallMM} mm
-                                  {log.notes ? ` · ${log.notes}` : ""}
-                                </p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                data-ocid={`admin.user.rainfall.delete_button.${ri + 1}`}
-                                onClick={() =>
-                                  void handleDelete(
-                                    deleteRainfall,
-                                    log.id,
-                                    "rainfall log",
-                                  )
-                                }
-                                disabled={deletingRainfall}
-                                className="h-7 w-7 p-0 rounded-lg text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </motion.div>
-            );
-          })}
+          {registryUsers.map((regUser, idx) => (
+            <RegistryUserRow
+              key={regUser.principalId.toString()}
+              regUser={regUser}
+              idx={idx}
+              allEstates={allEstates}
+              allLabour={allLabour}
+              allRainfall={allRainfall}
+              onDeleteUser={deleteUserFromRegistry}
+              onUpdateRole={updateUserRole}
+              onDeleteEstate={deleteEstate}
+              onDeleteLabour={deleteLabour}
+              onDeleteRainfall={deleteRainfall}
+              deletingUser={deletingUser}
+              updatingRole={updatingRole}
+              deletingEstate={deletingEstate}
+              deletingLabour={deletingLabour}
+              deletingRainfall={deletingRainfall}
+            />
+          ))}
         </AnimatePresence>
       </Accordion>
     </div>

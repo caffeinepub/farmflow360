@@ -126,5 +126,6 @@ export interface backendInterface {
     getUserRainfallLogs(): Promise<Array<RainfallLog>>;
     getUserRevenueEntries(): Promise<Array<RevenueEntry>>;
     isCallerAdmin(): Promise<boolean>;
+    claimAdminRole(secret: string): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
 }

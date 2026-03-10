@@ -9,6 +9,7 @@ import type {
   RainfallLog,
   RevenueEntry,
   UserProfile,
+  UserRole,
 } from "../backend.d";
 import { useActor } from "./useActor";
 
@@ -358,15 +359,19 @@ export function useIsAdmin() {
   return useQuery<boolean>({
     queryKey: ["isAdmin"],
     queryFn: async () => {
-      // Check local storage first (works even if backend role wasn't set)
-      if (isAdminUnlocked()) return true;
       if (!actor) return false;
-      // Also check backend role as fallback
+      // Always check backend role as the source of truth
       try {
-        return await actor.isCallerAdmin();
+        const backendAdmin = await actor.isCallerAdmin();
+        if (backendAdmin) {
+          // Sync localStorage so UI persists
+          localStorage.setItem(ADMIN_LOCAL_KEY, "1");
+          return true;
+        }
       } catch {
-        return false;
+        // fallback to local
       }
+      return isAdminUnlocked();
     },
     enabled: !!actor && !isFetching,
   });
@@ -455,6 +460,92 @@ export function useAdminAllUserPrincipals() {
       return actor.adminGetAllUserPrincipals();
     },
     enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAdminAllUserProfiles(principals: Principal[]) {
+  const { actor, isFetching } = useActor();
+  return useQuery<Record<string, string>>({
+    queryKey: [
+      "adminUserProfiles",
+      principals.map((p) => p.toString()).join(","),
+    ],
+    queryFn: async () => {
+      if (!actor || !principals.length) return {};
+      const results = await Promise.all(
+        principals.map(async (p) => {
+          try {
+            const profile = await actor.getUserProfile(p);
+            return [p.toString(), profile?.name ?? ""] as [string, string];
+          } catch {
+            return [p.toString(), ""] as [string, string];
+          }
+        }),
+      );
+      return Object.fromEntries(results);
+    },
+    enabled: !!actor && !isFetching && principals.length > 0,
+  });
+}
+
+export function useAdminAllUsers() {
+  const { actor, isFetching } = useActor();
+  return useQuery<
+    Array<{
+      principalId: Principal;
+      name: string;
+      role: string;
+      createdAt: bigint;
+    }>
+  >({
+    queryKey: ["adminAllUsers"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return (actor as any).adminGetAllUsers();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAdminDeleteUser() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (user: Principal) => {
+      if (!actor) throw new Error("Not authenticated");
+      return (actor as any).adminDeleteUserFromRegistry(user);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["adminAllUsers"] });
+    },
+  });
+}
+
+export function useAdminUpdateUserRole() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ user, role }: { user: Principal; role: UserRole }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return (actor as any).adminUpdateUserRole(user, role);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["adminAllUsers"] });
+    },
+  });
+}
+
+export function useAdminAssignRole() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ user, role }: { user: Principal; role: UserRole }) => {
+      if (!actor) throw new Error("Not authenticated");
+      return actor.assignCallerUserRole(user, role);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+    },
   });
 }
 

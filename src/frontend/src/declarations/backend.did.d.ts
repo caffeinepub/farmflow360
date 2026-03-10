@@ -126,6 +126,7 @@ export interface _SERVICE {
   'getUserRainfallLogs' : ActorMethod<[], Array<RainfallLog>>,
   'getUserRevenueEntries' : ActorMethod<[], Array<RevenueEntry>>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'claimAdminRole' : ActorMethod<[string], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;

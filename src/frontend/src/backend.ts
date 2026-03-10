@@ -174,6 +174,10 @@ export interface backendInterface {
     adminGetAllRainfallLogs(): Promise<Array<RainfallLog>>;
     adminGetAllRevenueEntries(): Promise<Array<RevenueEntry>>;
     adminGetAllUserPrincipals(): Promise<Array<Principal>>;
+    ensureUserInRegistry(): Promise<void>;
+    adminGetAllUsers(): Promise<Array<{principalId: Principal; name: string; role: string; createdAt: bigint}>>;
+    adminDeleteUserFromRegistry(user: Principal): Promise<void>;
+    adminUpdateUserRole(user: Principal, role: UserRole): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createCropYield(yield: CropYield): Promise<bigint>;
     createDailyLog(log: DailyLog): Promise<bigint>;
@@ -209,6 +213,7 @@ export interface backendInterface {
     getUserRainfallLogs(): Promise<Array<RainfallLog>>;
     getUserRevenueEntries(): Promise<Array<RevenueEntry>>;
     isCallerAdmin(): Promise<boolean>;
+    claimAdminRole(secret: string): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
 }
 import type { UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
@@ -408,6 +413,56 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.adminGetAllUserPrincipals();
             return result;
+        }
+    }
+    async ensureUserInRegistry(): Promise<void> {
+        if (this.processError) {
+            try {
+                await this.actor.ensureUserInRegistry();
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            await this.actor.ensureUserInRegistry();
+        }
+    }
+    async adminGetAllUsers(): Promise<Array<{principalId: Principal; name: string; role: string; createdAt: bigint}>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAllUsers();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminGetAllUsers();
+            return result;
+        }
+    }
+    async adminDeleteUserFromRegistry(arg0: Principal): Promise<void> {
+        if (this.processError) {
+            try {
+                await this.actor.adminDeleteUserFromRegistry(arg0);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            await this.actor.adminDeleteUserFromRegistry(arg0);
+        }
+    }
+    async adminUpdateUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
+        if (this.processError) {
+            try {
+                await this.actor.adminUpdateUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            await this.actor.adminUpdateUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
         }
     }
     async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
@@ -897,6 +952,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async claimAdminRole(arg0: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.claimAdminRole(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.claimAdminRole(arg0);
             return result;
         }
     }
