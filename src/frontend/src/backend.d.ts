@@ -72,6 +72,12 @@ export interface CropYield {
 export interface UserProfile {
     name: string;
 }
+export interface UserRecord {
+    principalId: Principal;
+    name: string;
+    role: string;
+    createdAt: bigint;
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -91,6 +97,10 @@ export interface backendInterface {
     adminGetAllRainfallLogs(): Promise<Array<RainfallLog>>;
     adminGetAllRevenueEntries(): Promise<Array<RevenueEntry>>;
     adminGetAllUserPrincipals(): Promise<Array<Principal>>;
+    adminGetAllUsers(): Promise<Array<UserRecord>>;
+    adminDeleteUserFromRegistry(user: Principal): Promise<void>;
+    adminUpdateUserRole(user: Principal, role: UserRole): Promise<void>;
+    adminResetAllUsers(token: string): Promise<boolean>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createCropYield(yield: CropYield): Promise<bigint>;
     createDailyLog(log: DailyLog): Promise<bigint>;
@@ -105,6 +115,7 @@ export interface backendInterface {
     deleteLabourEntry(entryId: bigint): Promise<void>;
     deleteRainfallLog(logId: bigint): Promise<void>;
     deleteRevenueEntry(entryId: bigint): Promise<void>;
+    ensureUserInRegistry(): Promise<void>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCropYield(yieldId: bigint): Promise<CropYield>;

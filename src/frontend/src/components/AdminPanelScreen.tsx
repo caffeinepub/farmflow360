@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Principal } from "@icp-sdk/core/principal";
 import {
+  AlertTriangle,
   BarChart3,
   Building2,
   Calendar,
@@ -67,6 +68,7 @@ import {
   useAdminDeleteRainfallLog,
   useAdminDeleteRevenueEntry,
   useAdminDeleteUser,
+  useAdminResetAllUsers,
   useAdminUpdateUserRole,
 } from "../hooks/useQueries";
 
@@ -204,6 +206,52 @@ function EmptyState({
       </div>
       <p className="text-sm text-muted-foreground font-medium">{message}</p>
     </div>
+  );
+}
+
+// ─── Reset All Users Button ───────────────────────────────────────────────────
+
+function ResetAllUsersButton() {
+  const resetMutation = useAdminResetAllUsers();
+
+  const handleReset = async () => {
+    const confirmed = window.confirm(
+      "This will delete ALL users and logins. Everyone will need to log in fresh. This cannot be undone. Continue?",
+    );
+    if (!confirmed) return;
+    try {
+      await resetMutation.mutateAsync();
+      toast.success("All users reset. Please log in again.");
+      setTimeout(() => {
+        localStorage.clear();
+        window.location.reload();
+      }, 1500);
+    } catch {
+      toast.error("Failed to reset users. Please try again.");
+    }
+  };
+
+  return (
+    <Button
+      variant="destructive"
+      size="sm"
+      onClick={handleReset}
+      disabled={resetMutation.isPending}
+      className="w-full font-bold"
+      data-ocid="admin.danger.delete_button"
+    >
+      {resetMutation.isPending ? (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Resetting...
+        </>
+      ) : (
+        <>
+          <Trash2 className="w-4 h-4 mr-2" />
+          Reset All Users
+        </>
+      )}
+    </Button>
   );
 }
 
@@ -496,6 +544,29 @@ function OverviewTab({
               </p>
             </div>
           </div>
+        </div>
+      </motion.div>
+
+      {/* Danger Zone - Reset All Users */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.4 }}
+        className="rounded-2xl border-2 border-red-300 overflow-hidden bg-red-50"
+        data-ocid="admin.danger.card"
+      >
+        <div className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-red-500 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-white" />
+            </div>
+            <h2 className="font-bold text-red-700 text-sm">Danger Zone</h2>
+          </div>
+          <p className="text-xs text-red-600 leading-relaxed">
+            This will delete all user accounts and logins. All users (including
+            you) must log in fresh.
+          </p>
+          <ResetAllUsersButton />
         </div>
       </motion.div>
     </div>

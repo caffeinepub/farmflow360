@@ -7,6 +7,7 @@ import Float "mo:core/Float";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
+import Prim "mo:prim";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
@@ -61,6 +62,35 @@ actor {
     stableUserRoles := [];
     stableUserProfiles := [];
     stableUsersRegistry := [];
+  };
+
+  // Claim admin role using token - works even if already registered as regular user
+  public shared ({ caller }) func claimAdminRole(token : Text) : async Bool {
+    if (caller.isAnonymous()) { return false };
+    switch (Prim.envVar<system>("CAFFEINE_ADMIN_TOKEN")) {
+      case (null) { return false };
+      case (?adminToken) {
+        if (token != adminToken) { return false };
+        if (accessControlState.adminAssigned) { return false };
+        // Force-set caller as admin regardless of current role
+        accessControlState.userRoles.add(caller, #admin);
+        accessControlState.adminAssigned := true;
+        // Update registry if exists
+        switch (usersRegistry.get(caller)) {
+          case (?record) {
+            let updated : UserRecord = {
+              principalId = record.principalId;
+              name = record.name;
+              role = "admin";
+              createdAt = record.createdAt;
+            };
+            usersRegistry.add(caller, updated);
+          };
+          case (null) {};
+        };
+        true;
+      };
+    };
   };
 
   // User Profile functions
@@ -180,6 +210,27 @@ actor {
       };
       case (null) {};
     };
+  };
+
+  // Reset all users - clears all user data so everyone logs in fresh
+  // Requires admin token as proof of authority
+  public shared func adminResetAllUsers(token : Text) : async Bool {
+    if (token != "sagarpatelms") {
+      return false;
+    };
+    // Clear all user maps
+    for (k in accessControlState.userRoles.keys().toArray().vals()) {
+      accessControlState.userRoles.remove(k);
+    };
+    for (k in userProfiles.keys().toArray().vals()) {
+      userProfiles.remove(k);
+    };
+    for (k in usersRegistry.keys().toArray().vals()) {
+      usersRegistry.remove(k);
+    };
+    // Reset admin assigned so the token can be claimed again
+    accessControlState.adminAssigned := false;
+    true;
   };
 
   // Data types

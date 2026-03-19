@@ -9,6 +9,7 @@ import type {
   RainfallLog,
   RevenueEntry,
   UserProfile,
+  UserRecord,
   UserRole,
 } from "../backend.d";
 import { useActor } from "./useActor";
@@ -490,18 +491,11 @@ export function useAdminAllUserProfiles(principals: Principal[]) {
 
 export function useAdminAllUsers() {
   const { actor, isFetching } = useActor();
-  return useQuery<
-    Array<{
-      principalId: Principal;
-      name: string;
-      role: string;
-      createdAt: bigint;
-    }>
-  >({
+  return useQuery<UserRecord[]>({
     queryKey: ["adminAllUsers"],
     queryFn: async () => {
       if (!actor) return [];
-      return (actor as any).adminGetAllUsers();
+      return actor.adminGetAllUsers();
     },
     enabled: !!actor && !isFetching,
   });
@@ -513,7 +507,7 @@ export function useAdminDeleteUser() {
   return useMutation({
     mutationFn: async (user: Principal) => {
       if (!actor) throw new Error("Not authenticated");
-      return (actor as any).adminDeleteUserFromRegistry(user);
+      return actor.adminDeleteUserFromRegistry(user);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["adminAllUsers"] });
@@ -527,7 +521,7 @@ export function useAdminUpdateUserRole() {
   return useMutation({
     mutationFn: async ({ user, role }: { user: Principal; role: UserRole }) => {
       if (!actor) throw new Error("Not authenticated");
-      return (actor as any).adminUpdateUserRole(user, role);
+      return actor.adminUpdateUserRole(user, role);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["adminAllUsers"] });
@@ -545,6 +539,21 @@ export function useAdminAssignRole() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+    },
+  });
+}
+
+export function useAdminResetAllUsers() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Not authenticated");
+      return (actor as any).adminResetAllUsers(ADMIN_TOKEN);
+    },
+    onSuccess: () => {
+      // Clear all local state
+      localStorage.removeItem(ADMIN_LOCAL_KEY);
+      localStorage.removeItem("plantation360_profile_setup_done");
     },
   });
 }

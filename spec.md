@@ -1,30 +1,24 @@
 # Plantation 360
 
 ## Current State
-Backend has stable storage for userRoles and userProfiles. All core data maps (estates, labourEntries, rainfallLogs, dailyLogs, cropYields, forecasts, revenueEntries) exist but use in-memory maps with no stable persistence. Admin panel reads user data via adminGetAllUserPrincipals (returns only principals, no names/roles/dates). No persistent users registry exists.
+The `adminResetAllUsers` function clears all userRoles, userProfiles, and usersRegistry. However, after reset, when a user logs in, `_initializeAccessControlWithSecret("")` is called automatically and registers them as a regular `#user`. When they then enter the admin token on the Profile tab, the backend's `initialize` function sees they already exist (`case (?_) {}`) and skips -- so they stay as a regular user and can never reclaim admin.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `UserRecord` type: `{ principalId, name, role, createdAt }`
-- `usersRegistry` map (Principal → UserRecord) with stable storage
-- `ensureUserInRegistry()` - called on login, auto-creates record if not exists
-- `updateUserRegistryName(name)` - updates name in registry when user saves profile
-- `adminGetAllUsers()` - returns all UserRecord entries for Admin Panel
-- `adminDeleteUserFromRegistry(user)` - removes user from registry + roles
-- `adminUpdateUserRole(user, role)` - updates role in both accessControl and registry
-- Stable vars: `stableUsersRegistry` saved in preupgrade, restored in postupgrade
+- New backend function `claimAdminWithToken(token: Text): async Bool` that:
+  - Reads `CAFFEINE_ADMIN_TOKEN` from env
+  - If token matches AND `adminAssigned` is false, sets caller as `#admin`, sets `adminAssigned = true`, returns `true`
+  - Works regardless of whether caller is already in `userRoles`
+  - Returns `false` if token is wrong or admin already assigned
 
 ### Modify
-- `preupgrade` / `postupgrade` hooks to also persist/restore `usersRegistry`
-- Frontend: call `ensureUserInRegistry` after `_initializeAccessControlWithSecret` on login
-- Frontend Admin Panel: use `adminGetAllUsers` to show real user list with names, roles, join date
+- Frontend Profile tab: when admin token is entered and "Claim Admin Access" is clicked, call the new `claimAdminWithToken` instead of (or in addition to) `_initializeAccessControlWithSecret`
+- If `claimAdminWithToken` returns true, set `isAdmin` in localStorage and show Admin tab
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Update `main.mo`: add UserRecord type, usersRegistry map, stable vars, preupgrade/postupgrade, and all new functions
-2. Update frontend to call `ensureUserInRegistry` after login init
-3. Update Admin Panel to call `adminGetAllUsers` and display name, role, join date per user
-4. Wire `adminDeleteUserFromRegistry` and `adminUpdateUserRole` to admin panel controls
+1. Add `claimAdminWithToken` to `main.mo` (directly modify the file, no codegen needed)
+2. Update frontend Profile tab to call `claimAdminWithToken` when claiming admin access
